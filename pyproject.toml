@@ -1,0 +1,49 @@
+[project]
+name = "im-a-pro-2026-olympics"
+version = "0.1.0"
+description = "Graphics project for 2026 Olympics"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "matplotlib>=3.10.8",
+    "pyright>=1.1.408",
+    "ruff>=0.15.1",
+    "loguru>=0.7.2",
+    "numpy>=1.26.0",
+]
+
+[tool.uv]
+managed = true
+
+[tool.uv.sources]
+im-a-pro-2026-olympics = { path = "src" }
+
+[tool.ruff]
+extend-exclude = ["ruff"]
+per-file-target-version = { "scripts/**" = "py313" }
+
+[tool.ruff.lint]
+select = [
+    "E",   # pycodestyle (error)
+    "F",   # pyflakes
+    "B",   # bugbear
+    "B9",
+    "C4",  # flake8-comprehensions
+    "SIM", # flake8-simplify
+    "I",   # isort
+    "UP",  # pyupgrade
+    "PIE", # flake8-pie
+    "PGH", # pygrep-hooks
+    "PYI", # flake8-pyi
+    "RUF",
+]
+
+ignore = [
+    # only relevant if you run a script with `python -0`
+    "B011",
+    # Leave it to the formatter to split long lines
+    "E501",
+]
+
+[tool.ty.environment]
+root = ["src"]
