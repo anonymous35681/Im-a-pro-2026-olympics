@@ -10,13 +10,12 @@ dependencies = [
     "ruff>=0.15.1",
     "loguru>=0.7.2",
     "numpy>=1.26.0",
+    "pandas>=3.0.1",
+    "openpyxl>=3.1.5",
 ]
 
 [tool.uv]
 managed = true
-
-[tool.uv.sources]
-im-a-pro-2026-olympics = { path = "src" }
 
 [tool.ruff]
 extend-exclude = ["ruff"]
