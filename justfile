@@ -6,7 +6,7 @@ qa:
     uv run ruff check src/
     uv run ty check src/
 
-# Run the converter script
+# Run the converter script (origin xlsx -> csv)
 convert_origin:
     uv run src/scripts/converter.py
 
