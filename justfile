@@ -17,6 +17,6 @@ convert_origin:
 convert_demographics:
     uv run src/scripts/demographics_converter.py
 
-# Generate all graphics
-run:
-    uv run src/main.py
+# Generate all graphics (or specific graph with number)
+run number="":
+    uv run src/main.py {{number}}
