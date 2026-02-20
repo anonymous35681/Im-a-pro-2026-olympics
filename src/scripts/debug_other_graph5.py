@@ -1,4 +1,3 @@
-# ruff: noqa: RUF001
 import os
 
 # Suppress heavy logging from libraries

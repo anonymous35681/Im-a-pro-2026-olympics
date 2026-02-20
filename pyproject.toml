@@ -48,10 +48,9 @@ select = [
 ]
 
 ignore = [
-    # only relevant if you run a script with `python -0`
     "B011",
-    # Leave it to the formatter to split long lines
     "E501",
+    "RUF001",
 ]
 
 [tool.ty.environment]

@@ -1,4 +1,3 @@
-# ruff: noqa: RUF001
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
@@ -33,7 +32,7 @@ def run() -> None:
     }
 
     df["freq_group"] = df[col19].map(freq_map)
-    
+
     # Filter only those who encountered fakes and have a group
     df = df.dropna(subset=["freq_group"])
 
@@ -48,10 +47,10 @@ def run() -> None:
         "7. Журналы": "Журналы",
         "8. Телеграм-каналы": "Телеграм",
     }
-    
+
     categories = list(source_mapping.values())
     groups = ["Часто (День/Неделя)", "Редко (Месяц/Год)"]
-    
+
     # Calculate stats
     stats = {}
     for group in groups:
@@ -70,8 +69,12 @@ def run() -> None:
         stats[group] = percentages
 
     # Sort categories by total percentage (descending) for better visualization
-    category_totals = {cat: sum(stats[group][cat] for group in groups) for cat in categories}
-    sorted_categories = sorted(category_totals.keys(), key=lambda x: category_totals[x], reverse=True)
+    category_totals = {
+        cat: sum(stats[group][cat] for group in groups) for cat in categories
+    }
+    sorted_categories = sorted(
+        category_totals.keys(), key=lambda x: category_totals[x], reverse=True
+    )
 
     # Reorder stats based on sorted categories
     sorted_stats = {}
@@ -84,7 +87,7 @@ def run() -> None:
     # Radar chart setup
     num_vars = len(categories)
     angles = np.linspace(0, 2 * np.pi, num_vars, endpoint=False).tolist()
-    
+
     # Close the loop
     for group in stats:
         stats[group].append(stats[group][0])
@@ -123,7 +126,13 @@ def run() -> None:
         color=TEXT_COLOR,
     )
 
-    plt.legend(loc="upper right", bbox_to_anchor=(1.3, 1.1), frameon=True, facecolor="black", edgecolor="white")
+    plt.legend(
+        loc="upper right",
+        bbox_to_anchor=(1.3, 1.1),
+        frameon=True,
+        facecolor="black",
+        edgecolor="white",
+    )
 
     plt.tight_layout()
 
