@@ -1,142 +1,213 @@
 import matplotlib.pyplot as plt
-import numpy as np
 import pandas as pd
 from loguru import logger
 
 from config import OUTPUT_DIR, ROOT_DIR
-from style import TEXT_COLOR, apply_global_style
-
-
-def map_age_to_group(age: int) -> str:
-    """Map individual age to age group."""
-    if age < 18:
-        return "Другое"
-
-    for low, high, label in [
-        (18, 24, "18-24"),
-        (25, 34, "25-34"),
-        (35, 44, "35-44"),
-        (45, 54, "45-54"),
-        (55, 64, "55-64"),
-    ]:
-        if low <= age <= high:
-            return label
-    return "65+"
+from style import BACKGROUND_COLOR, NEON_CYAN, TEXT_COLOR, apply_global_style
 
 
 def run() -> None:
-    """Generate Graph 8: News sources by age group (Sankey + Line charts)."""
-    logger.info("Generating Graph 8: News sources by age group.")
-
-    age_groups = ["18-24", "25-34", "35-44", "45-54", "55-64", "65+"]
+    """
+    Generate Graph 8: Usage of information sources by age group (Bubble Chart).
+    """
+    logger.info("Generating Graph 8: Information sources usage by age group.")
 
     # Load dataset
-    df = pd.read_csv(ROOT_DIR / "data" / "origin_dataset.csv")
+    data_path = ROOT_DIR / "data" / "origin_dataset.csv"
+    if not data_path.exists():
+        logger.error(f"Dataset not found at {data_path}")
+        return
 
-    # Map age to groups
-    df["age_group"] = df["5. Ваш возраст (количество полных лет):"].apply(
-        map_age_to_group
+    df = pd.read_csv(data_path)
+
+    # Preprocessing: Age
+    # Ensure numeric and drop NaNs
+    df["age"] = pd.to_numeric(
+        df["5. Ваш возраст (количество полных лет):"], errors="coerce"
     )
+    df = df.dropna(subset=["age"])
 
-    # Filter only target age groups
-    df = df[df["age_group"].isin(age_groups)]
+    # Define age bins and labels
+    age_bins = [18, 25, 35, 45, 55, 65, 100]
+    age_labels = ["18-24", "25-34", "35-44", "45-54", "55-64", "65+"]
 
-    # Define source columns and their display names
-    sources = [
-        ("[Телевидение]", "Телевидение"),
-        ("[Интернет-издания]", "Интернет-издания"),
-        ("[Друзья]", "Друзья, знакомые, родственники"),
-        ("[Телеграм-каналы]", "Телеграм-каналы"),
-        ("[Газеты]", "Печатные газеты"),
-        ("[Радио]", "Радио"),
-        ("[Журналы]", "Печатные журналы"),
-    ]
+    df["age_group"] = pd.cut(df["age"], bins=age_bins, labels=age_labels, right=False)
 
-    # Calculate usage percentages for each age group and source
-    # Value "1. Пользуюсь" or 1 means user uses the source
-    data = []
-    for age_group in age_groups:
-        group_df = df[df["age_group"] == age_group]
-        group_size = len(group_df)
+    # Define source columns mapping
+    # Assuming the 'Unified' columns are the ones to use based on analysis
+    source_mapping = {
+        "[Объединенный] Телевидение": "Телевидение",
+        "[Объединенный] Социальные сети": "Социальные сети",
+        "[Объединенный] Интернет-издания": "Интернет-издания",
+        "[Объединенный] Друзья": "Друзья, знакомые, родственники",
+        "[Объединенный] Газеты": "Печатные газеты",
+        "[Объединенный] Журналы": "Печатные журналы",
+        "[Объединенный] Телеграм-каналы": "Telegram-каналы",
+        "[Объединенный] Радио": "Радио",
+    }
 
-        row = {"age_group": age_group}
-        for col, display_name in sources:
-            # Count users who use this source (value is "1. Пользуюсь" or numeric 1)
-            users = (
-                group_df[col]
-                .apply(lambda x: 1 if (x == "1. Пользуюсь" or x == 1) else 0)
-                .sum()
+    # Calculate usage percentages
+    results = []
+
+    # Helper function to check usage
+    def is_user(val):
+        if pd.isna(val):
+            return False
+        return "Пользуюсь" in str(val)
+
+    # 1. Calculate for each age group
+    for group in age_labels:
+        group_df = df[df["age_group"] == group]
+        total_in_group = len(group_df)
+
+        if total_in_group == 0:
+            continue
+
+        for col, label in source_mapping.items():
+            if col not in df.columns:
+                logger.warning(f"Column '{col}' not found in dataset.")
+                continue
+
+            users_count = group_df[col].apply(is_user).sum()
+            percentage = (users_count / total_in_group) * 100
+
+            results.append(
+                {"Age Group": group, "Source": label, "Percentage": percentage}
             )
-            percentage = (users / group_size) * 100
-            row[display_name] = percentage
-        data.append(row)
 
-    plot_df = pd.DataFrame(data)
-    plot_df = plot_df.set_index("age_group")
+    # 2. Calculate for "Total" (All ages)
+    total_df = df
+    total_count = len(total_df)
+    if total_count > 0:
+        for col, label in source_mapping.items():
+            if col not in df.columns:
+                continue
 
-    logger.info(f"Data for plotting:\n{plot_df}")
+            users_count = total_df[col].apply(is_user).sum()
+            percentage = (users_count / total_count) * 100
 
-    # Create figure with single subplot
-    apply_global_style()
-    _fig, ax = plt.subplots(figsize=(14, 8))
+            results.append(
+                {
+                    "Age Group": "Всего (18-65+)",
+                    "Source": label,
+                    "Percentage": percentage,
+                }
+            )
 
-    # === Line Chart ===
-    source_display_names = [display_name for _, display_name in sources]
-    colors = [
-        "#E57373",  # Телевидение - красный
-        "#81C784",  # Интернет-издания - зеленый
-        "#64B5F6",  # Друзья - синий
-        "#FFD54F",  # Телеграм-каналы - желтый
-        "#BA68C8",  # Печатные газеты - фиолетовый
-        "#4DD0E1",  # Радио - бирюзовый
-        "#FFB74D",  # Печатные журналы - оранжевый
+    plot_df = pd.DataFrame(results)
+
+    # Order of Sources (Y-axis) - can be sorted by Total percentage or manual
+    # Let's sort by Total percentage descending for better readability
+    total_percentages = plot_df[plot_df["Age Group"] == "Всего (18-65+)"][
+        ["Source", "Percentage"]
     ]
+    sorted_sources = total_percentages.sort_values("Percentage", ascending=True)[
+        "Source"
+    ].tolist()
 
-    # Plot lines for each source
-    x = np.arange(len(age_groups))
-    for i, source_name in enumerate(source_display_names):
-        values = plot_df[source_name].values
-        ax.plot(
-            x,
-            values,
-            marker="o",
-            linewidth=2.5,
-            markersize=8,
-            label=source_name,
-            color=colors[i],
-            alpha=0.9,
+    # Visualization
+    apply_global_style()
+    _, ax = plt.subplots(figsize=(14, 10))
+
+    # X-axis order
+    x_order = [*age_labels, "Всего (18-65+)"]
+
+    # Y-axis order
+    y_order = sorted_sources
+
+    # Plot lines and bubbles
+    # We iterate over age groups (X-axis) and draw a vertical line
+    for i, group in enumerate(x_order):
+        group_data = plot_df[plot_df["Age Group"] == group]
+
+        # Draw vertical line
+        # We need numeric coordinates for Y. Let's map sources to 0..N
+        # But standard plot uses data coordinates.
+        # Let's just plot the line from min to max source index
+
+        # Filter data for this group
+        # Map sources to indices
+        group_data = group_data.set_index("Source").reindex(y_order).reset_index()
+
+        # Y indices
+        y_indices = range(len(y_order))
+
+        # Plot vertical line
+        ax.vlines(
+            x=i,
+            ymin=0,
+            ymax=len(y_order) - 1,
+            colors=NEON_CYAN,
+            linestyles="-",
+            linewidth=1.5,
+            alpha=0.6,
         )
 
-    ax.set_xlabel("Возрастная группа", fontsize=12, color=TEXT_COLOR)
-    ax.set_ylabel("Процент пользователей (%)", fontsize=12, color=TEXT_COLOR)
-    ax.set_xticks(x)
-    ax.set_xticklabels(age_groups, fontsize=11)
-    ax.set_ylim(0, 100)
+        # Plot bubbles
+        # Size proportional to percentage
+        sizes = group_data["Percentage"] * 20  # Scaling factor
 
-    # Add grid
-    ax.grid(True, linestyle="--", alpha=0.3)
-    ax.set_axisbelow(True)
+        # Scatter plot for this group
+        # Use simple scatter with mapped Y coordinates
+        ax.scatter(
+            x=[i] * len(group_data),
+            y=y_indices,
+            s=sizes,
+            c=BACKGROUND_COLOR,  # Fill with background to show ring effect?
+            # Or fill with Cyan? The prompt says "circles... inside written percentage".
+            # Usually bubbles are filled or have an edge.
+            # Let's do: Edge color Cyan, Face color Background (or slightly transparent Cyan), Text inside.
+            edgecolors=NEON_CYAN,
+            linewidths=2,
+            zorder=3,
+        )
 
-    # Add legend below the plot
-    ax.legend(
-        loc="upper center",
-        bbox_to_anchor=(0.5, -0.15),
-        ncol=3,
-        frameon=True,
-        facecolor="black",
-        edgecolor="white",
-        fontsize=10,
+        # Add text inside bubbles
+        for y_idx, row in enumerate(group_data.itertuples()):
+            pct = row.Percentage
+            # Determine font size based on bubble size? Or fixed.
+            # Only show if percentage > some threshold?
+            # Assuming all relevant sources have some usage.
+            ax.text(
+                x=i,
+                y=y_idx,
+                s=f"{pct:.0f}%",
+                color=TEXT_COLOR,
+                ha="center",
+                va="center",
+                fontsize=9,
+                fontweight="bold",
+                zorder=4,
+            )
+
+    # Set ticks and labels
+    ax.set_xticks(range(len(x_order)))
+    ax.set_xticklabels(x_order, fontsize=12)
+
+    ax.set_yticks(range(len(y_order)))
+    ax.set_yticklabels(y_order, fontsize=12)
+
+    # Remove spines
+    ax.spines["top"].set_visible(False)
+    ax.spines["right"].set_visible(False)
+    ax.spines["bottom"].set_visible(False)
+    ax.spines["left"].set_visible(False)
+
+    # Grid (optional, maybe vertical grid is redundant since we have lines, horizontal could help)
+    # ax.grid(False) # Clean look
+
+    # Title
+    # Calculate key insight: Which source is most popular overall?
+    top_source = total_percentages.sort_values("Percentage", ascending=False).iloc[0]
+    title_text = (
+        f"Телевидение и соцсети — главные источники информации во всех возрастных группах\n"
+        f"(Лидер: {top_source['Source']} — {top_source['Percentage']:.0f}%)"
     )
 
-    ax.set_title(
-        "Динамика предпочтений новостных источников\nпо возрастным группам",
-        fontsize=14,
-        pad=20,
-        color=TEXT_COLOR,
-    )
+    plt.title(title_text, fontsize=16, pad=30, color=TEXT_COLOR, loc="left")
 
+    # Adjust layout
     plt.tight_layout()
-    plt.subplots_adjust(bottom=0.25)  # Make room for legend
 
     # Save
     output_path = OUTPUT_DIR / "graph8.png"
