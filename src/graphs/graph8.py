@@ -53,7 +53,8 @@ def run() -> None:
     def is_user(val):
         if pd.isna(val):
             return False
-        return "Пользуюсь" in str(val)
+        val_str = str(val)
+        return "Пользуюсь" in val_str or "Доверяю" in val_str
 
     # 1. Calculate for each age group
     for group in age_labels:
@@ -144,8 +145,8 @@ def run() -> None:
         )
 
         # Plot bubbles
-        # Size proportional to percentage
-        sizes = group_data["Percentage"] * 20  # Scaling factor
+        # Use fixed size to match the visual reference (uniform bubbles)
+        sizes = [1000] * len(group_data)
 
         # Scatter plot for this group
         # Use simple scatter with mapped Y coordinates
