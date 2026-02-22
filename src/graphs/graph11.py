@@ -37,13 +37,14 @@ def run() -> None:
     }
 
     # Frequency scale mapping (Value -> Category Name)
-    # Ordered Left to Right: Daily -> Weekly -> Monthly -> Yearly -> Never
+    # Ordered Left to Right: Daily -> Weekly -> Monthly -> Yearly -> Never -> Hard to say
     freq_map = {
         "1. Практически ежедневно": "Ежедневно",
         "2. По нескольку раз в неделю": "По несколько раз в неделю",
         "3. По нескольку раз в месяц": "По несколько раз в месяц",
-        "4. Несколько раз в год": "Раз в год",
+        "4. Несколько раз в год": "По несколько раз в год",
         "5. Не сталкивался": "Не сталкивался",
+        "6. Затрудняюсь ответить": "Затрудняюсь ответить",
     }
 
     # Order for stacking (Left to Right)
@@ -51,8 +52,9 @@ def run() -> None:
         "Ежедневно",
         "По несколько раз в неделю",
         "По несколько раз в месяц",
-        "Раз в год",
+        "По несколько раз в год",
         "Не сталкивался",
+        "Затрудняюсь ответить",
     ]
 
     # Colors (Neon/Bright matching reference)
@@ -60,8 +62,9 @@ def run() -> None:
         "Ежедневно": "#FF0055",  # Bright Pink/Red
         "По несколько раз в неделю": "#FF8800",  # Bright Orange
         "По несколько раз в месяц": "#FFFF00",  # Bright Yellow
-        "Раз в год": "#00FF55",  # Bright Green
+        "По несколько раз в год": "#00FF55",  # Bright Green
         "Не сталкивался": "#00FFFF",  # Cyan
+        "Затрудняюсь ответить": "#888888",  # Gray
     }
 
     data_rows = []
@@ -87,7 +90,7 @@ def run() -> None:
 
         counts = subset[freq_col].value_counts()
 
-        # Calculate valid total (excluding "Hard to say")
+        # Calculate total (including all categories)
         valid_total = 0
         valid_counts = {}
         for original_cat, short_cat in freq_map.items():
