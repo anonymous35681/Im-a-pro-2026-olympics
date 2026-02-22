@@ -16,10 +16,15 @@ def main():
 
     col_age = cols[5]
     col_edu = cols[6]
+    col_marital_status = None
+    for col in cols:
+        if col.startswith("12. Ваше семейное положение"):
+            col_marital_status = col
+            break
     col_income = cols[13]
     col_city_district = cols[1]
     col_city_name = cols[2]
-    # col_settlement_type = cols[3] # Unused
+    col_settlement_type = cols[3]  # 3. Тип населенного пункта
 
     trust_map = {
         "Телевидение": "[Телевидение].1",
@@ -139,8 +144,8 @@ def main():
 
     report_lines.append("")
 
-    # --- 3. Age 45-65+ vs 18-34 Fake Encounters ---
-    report_lines.append("## 3) Столкновение с фейками по возрастам")
+    # --- 3. Age 45-65+ vs 18-34 Fake Encounters (with settlement split) ---
+    report_lines.append("## 3) Столкновение с фейками по возрастам и типу поселения")
 
     df["Age_Clean"] = pd.to_numeric(df[col_age], errors="coerce")
 
@@ -148,9 +153,10 @@ def main():
     group_younger = df[(df["Age_Clean"] >= 18) & (df["Age_Clean"] <= 34)]
 
     def calc_freq_stats(sub_df, label):
+        """Calculate frequency stats for a subgroup."""
         total_sub = len(sub_df)
         if total_sub == 0:
-            return f"{label}: Нет респондентов"
+            return None
 
         monthly_plus = (
             sub_df[col_encounter_freq]
@@ -181,10 +187,67 @@ def main():
             .sum()
         )
 
-        return f"- {label}: Не реже неск. раз в месяц - {(monthly_plus / total_sub) * 100:.1f}%, Почти каждый день - {(daily / total_sub) * 100:.1f}%"
+        return f"  - {label}: Не реже неск. раз в месяц - {(monthly_plus / total_sub) * 100:.1f}%, Почти каждый день - {(daily / total_sub) * 100:.1f}%"
 
-    report_lines.append(calc_freq_stats(group_older, "Люди 45+ лет"))
-    report_lines.append(calc_freq_stats(group_younger, "Люди 18-34 лет"))
+    # Process older group (45+)
+    report_lines.append("**Люди 45+ лет:**")
+
+    # Саранск
+    saransk_older = group_older[
+        group_older[col_city_district].astype(str).str.contains("Саранск", case=False, na=False)
+    ]
+    if len(saransk_older) > 0:
+        result = calc_freq_stats(saransk_older, "Саранск")
+        if result:
+            report_lines.append(result)
+
+    # Города и пгт (без Саранска)
+    cities_older = group_older[
+        group_older[col_settlement_type].astype(str) == "2. Города и пгт"
+    ]
+    if len(cities_older) > 0:
+        result = calc_freq_stats(cities_older, "Города и пгт")
+        if result:
+            report_lines.append(result)
+
+    # Села
+    villages_older = group_older[
+        group_older[col_settlement_type].astype(str) == "3. Села"
+    ]
+    if len(villages_older) > 0:
+        result = calc_freq_stats(villages_older, "Села")
+        if result:
+            report_lines.append(result)
+
+    # Process younger group (18-34)
+    report_lines.append("**Люди 18-34 лет:**")
+
+    # Саранск
+    saransk_younger = group_younger[
+        group_younger[col_city_district].astype(str).str.contains("Саранск", case=False, na=False)
+    ]
+    if len(saransk_younger) > 0:
+        result = calc_freq_stats(saransk_younger, "Саранск")
+        if result:
+            report_lines.append(result)
+
+    # Города и пгт (без Саранска)
+    cities_younger = group_younger[
+        group_younger[col_settlement_type].astype(str) == "2. Города и пгт"
+    ]
+    if len(cities_younger) > 0:
+        result = calc_freq_stats(cities_younger, "Города и пгт")
+        if result:
+            report_lines.append(result)
+
+    # Села
+    villages_younger = group_younger[
+        group_younger[col_settlement_type].astype(str) == "3. Села"
+    ]
+    if len(villages_younger) > 0:
+        result = calc_freq_stats(villages_younger, "Села")
+        if result:
+            report_lines.append(result)
 
     report_lines.append("")
 
@@ -351,15 +414,16 @@ def main():
                 return "Unknown"
 
     if len(internet_group) > 0:
-        internet_capital_pct = (
+        # Саранск
+        internet_saransk_pct = (
             internet_group[col_city_district]
             .astype(str)
             .str.contains("Саранск", case=False)
             .sum()
             / len(internet_group)
         ) * 100
-        if internet_capital_pct < 1:
-            internet_capital_pct = (
+        if internet_saransk_pct < 1:
+            internet_saransk_pct = (
                 internet_group[col_city_name]
                 .astype(str)
                 .str.contains("Саранск", case=False)
@@ -367,14 +431,38 @@ def main():
                 / len(internet_group)
             ) * 100
 
+        # Другие города и пгт
+        internet_other_cities_pct = (
+            internet_group[col_settlement_type]
+            .astype(str)
+            .str.contains("2. Города и пгт", case=False)
+            .sum()
+            / len(internet_group)
+        ) * 100
+
+        # Села
+        internet_villages_pct = (
+            internet_group[col_settlement_type]
+            .astype(str)
+            .str.contains("3. Села", case=False)
+            .sum()
+            / len(internet_group)
+        ) * 100
+
+        # Доход
         internet_income_counts = (
             internet_group[col_income]
             .apply(classify_income)
             .value_counts(normalize=True)
             * 100
         )
+
         report_lines.append(
-            f"- Интернет-издания (аудитория): Жители Саранска {internet_capital_pct:.1f}%, Доход средний/высокий {(internet_income_counts.get('Medium', 0) + internet_income_counts.get('High', 0)):.1f}%"
+            f"- Интернет-издания (аудитория): "
+            f"Саранск {internet_saransk_pct:.1f}%, "
+            f"Города и пгт {internet_other_cities_pct:.1f}%, "
+            f"Села {internet_villages_pct:.1f}%; "
+            f"Доход средний/высокий {(internet_income_counts.get('Medium', 0) + internet_income_counts.get('High', 0)):.1f}%"
         )
 
     tv_skeptics = df[
@@ -454,6 +542,421 @@ def main():
         report_lines.append(
             f"- Общий индекс доверия к людям (Q14): {general_trust_pct:.1f}%"
         )
+
+    # --- 7. Trust in TV by Age, Income, and Marital Status (split by Settlement) ---
+    report_lines.append("## 7) Доверие к телевидению в зависимости от возраста, дохода и семейного положения (с разбивкой на села/города)")
+
+    tv_col = "[Телевидение].1"
+    if tv_col not in df.columns:
+        report_lines.append("Данные о доверии к ТВ отсутствуют")
+    else:
+        # Age groups
+        df["Age_Clean"] = pd.to_numeric(df[col_age], errors="coerce")
+
+        # Settlement types
+        settlement_map = {
+            "1. Саранск": "city",
+            "2. Города и пгт": "city",
+            "3. Села": "village",
+        }
+        df["Settlement_Type"] = df[col_settlement_type].map(settlement_map)
+
+        age_groups = [
+            ("18-24", (df["Age_Clean"] >= 18) & (df["Age_Clean"] <= 24)),
+            ("25-34", (df["Age_Clean"] >= 25) & (df["Age_Clean"] <= 34)),
+            ("35-44", (df["Age_Clean"] >= 35) & (df["Age_Clean"] <= 44)),
+            ("45-54", (df["Age_Clean"] >= 45) & (df["Age_Clean"] <= 54)),
+            ("55-64", (df["Age_Clean"] >= 55) & (df["Age_Clean"] <= 64)),
+            ("65+", (df["Age_Clean"] >= 65)),
+        ]
+
+        report_lines.append("**По возрастным группам (города vs села):**")
+
+        for age_label, age_mask in age_groups:
+            age_df = df[age_mask]
+            if len(age_df) == 0:
+                continue
+
+            report_lines.append(f"- {age_label} лет:")
+
+            for settlement_type, settlement_name in [("city", "Города"), ("village", "Села")]:
+                settle_df = age_df[age_df["Settlement_Type"] == settlement_type]
+
+                if len(settle_df) == 0:
+                    continue
+
+                trust_count = (
+                    settle_df[tv_col]
+                    .astype(str)
+                    .apply(lambda x: 1 if "Доверяю" in x and "Не доверяю" not in x else 0)
+                    .sum()
+                )
+
+                distrust_count = (
+                    settle_df[tv_col]
+                    .astype(str)
+                    .apply(lambda x: 1 if "Не доверяю" in x else 0)
+                    .sum()
+                )
+
+                trust_pct = (trust_count / len(settle_df)) * 100
+                distrust_pct = (distrust_count / len(settle_df)) * 100
+
+                report_lines.append(
+                    f"  - {settlement_name}: Доверяют {trust_pct:.1f}%, Не доверяют {distrust_pct:.1f}%"
+                )
+
+        report_lines.append("")
+        report_lines.append("**По уровню дохода (города vs села):**")
+
+        for income_level in ["Low", "Medium", "High"]:
+            income_df = df[df[col_income].apply(classify_income) == income_level]
+
+            if len(income_df) == 0:
+                continue
+
+            income_labels = {"Low": "Низкий", "Medium": "Средний", "High": "Высокий"}
+            report_lines.append(f"- {income_labels[income_level]} доход:")
+
+            for settlement_type, settlement_name in [("city", "Города"), ("village", "Села")]:
+                settle_df = income_df[income_df["Settlement_Type"] == settlement_type]
+
+                if len(settle_df) == 0:
+                    continue
+
+                trust_count = (
+                    settle_df[tv_col]
+                    .astype(str)
+                    .apply(lambda x: 1 if "Доверяю" in x and "Не доверяю" not in x else 0)
+                    .sum()
+                )
+
+                distrust_count = (
+                    settle_df[tv_col]
+                    .astype(str)
+                    .apply(lambda x: 1 if "Не доверяю" in x else 0)
+                    .sum()
+                )
+
+                trust_pct = (trust_count / len(settle_df)) * 100
+                distrust_pct = (distrust_count / len(settle_df)) * 100
+
+                report_lines.append(
+                    f"  - {settlement_name}: Доверяют {trust_pct:.1f}%, Не доверяют {distrust_pct:.1f}%"
+                )
+
+        report_lines.append("")
+        report_lines.append("**По семейному положению (города vs села):**")
+
+        # Get unique marital status values
+        if col_marital_status is not None:
+            marital_statuses = df[col_marital_status].dropna().unique()
+
+            for status in sorted(marital_statuses):
+                status_df = df[df[col_marital_status] == status]
+
+                if len(status_df) == 0:
+                    continue
+
+                report_lines.append(f"- {status}:")
+
+                for settlement_type, settlement_name in [("city", "Города"), ("village", "Села")]:
+                    settle_df = status_df[status_df["Settlement_Type"] == settlement_type]
+
+                    if len(settle_df) == 0:
+                        continue
+
+                    trust_count = (
+                        settle_df[tv_col]
+                        .astype(str)
+                        .apply(lambda x: 1 if "Доверяю" in x and "Не доверяю" not in x else 0)
+                        .sum()
+                    )
+
+                    distrust_count = (
+                        settle_df[tv_col]
+                        .astype(str)
+                        .apply(lambda x: 1 if "Не доверяю" in x else 0)
+                        .sum()
+                    )
+
+                    trust_pct = (trust_count / len(settle_df)) * 100
+                    distrust_pct = (distrust_count / len(settle_df)) * 100
+
+                    report_lines.append(
+                        f"  - {settlement_name}: Доверяют {trust_pct:.1f}%, Не доверяют {distrust_pct:.1f}%"
+                    )
+        else:
+            report_lines.append("- Данные о семейном положении отсутствуют")
+
+    report_lines.append("")
+
+    # --- 8. Family and Education by TV Watching (Focus on 44-64) ---
+    report_lines.append("## 8) Семья и образование в зависимости от просмотра ТВ")
+
+    # TV trust vs no trust
+    tv_trust_df = df[
+        df["[Телевидение].1"]
+        .astype(str)
+        .str.contains("Доверяю", case=False, na=False)
+        & ~df["[Телевидение].1"]
+        .astype(str)
+        .str.contains("Не доверяю", case=False, na=False)
+    ]
+
+    tv_distrust_df = df[
+        df["[Телевидение].1"]
+        .astype(str)
+        .str.contains("Не доверяю", case=False, na=False)
+    ]
+
+    # Overall analysis
+    report_lines.append("### Все возрасты")
+    report_lines.append("**Доверяют ТВ:**")
+
+    if len(tv_trust_df) > 0:
+        # Family trust among TV trusters
+        family_trust_pct = (
+            tv_trust_df[col_trust_surroundings]
+            .astype(str)
+            .str.contains("Большинству людей можно доверять", case=False)
+            .sum()
+            / len(tv_trust_df)
+        ) * 100
+        report_lines.append(f"- Доверяют семье и близким: {family_trust_pct:.1f}%")
+
+        # Education distribution
+        higher_edu_pct = (
+            tv_trust_df[col_edu]
+            .astype(str)
+            .str.contains("высшее", case=False, na=False)
+            .sum()
+            / len(tv_trust_df)
+        ) * 100
+        report_lines.append(f"- С высшим образованием: {higher_edu_pct:.1f}%")
+
+    report_lines.append("**Не доверяют ТВ:**")
+
+    if len(tv_distrust_df) > 0:
+        # Family trust among TV distrusters
+        family_trust_pct = (
+            tv_distrust_df[col_trust_surroundings]
+            .astype(str)
+            .str.contains("Большинству людей можно доверять", case=False)
+            .sum()
+            / len(tv_distrust_df)
+        ) * 100
+        report_lines.append(f"- Доверяют семье и близким: {family_trust_pct:.1f}%")
+
+        # Education distribution
+        higher_edu_pct = (
+            tv_distrust_df[col_edu]
+            .astype(str)
+            .str.contains("высшее", case=False, na=False)
+            .sum()
+            / len(tv_distrust_df)
+        ) * 100
+        report_lines.append(f"- С высшим образованием: {higher_edu_pct:.1f}%")
+
+    # Focus on 44-64 age group
+    report_lines.append("")
+    report_lines.append("### 🔍 ВОЗРАСТНАЯ ГРУППА 44-64 ГОДА (Акцент внимания)")
+
+    age_44_64_df = df[(df["Age_Clean"] >= 44) & (df["Age_Clean"] <= 64)]
+
+    if len(age_44_64_df) > 0:
+        report_lines.append(f"**Всего респондентов 44-64 лет: {len(age_44_64_df)}**")
+        report_lines.append("")
+
+        # TV trusters 44-64
+        tv_trust_44_64 = age_44_64_df[
+            age_44_64_df["[Телевидение].1"]
+            .astype(str)
+            .str.contains("Доверяю", case=False, na=False)
+            & ~age_44_64_df["[Телевидение].1"]
+            .astype(str)
+            .str.contains("Не доверяю", case=False, na=False)
+        ]
+
+        # TV distrusters 44-64
+        tv_distrust_44_64 = age_44_64_df[
+            age_44_64_df["[Телевидение].1"]
+            .astype(str)
+            .str.contains("Не доверяю", case=False, na=False)
+        ]
+
+        report_lines.append("**Доверяют ТВ (44-64 года):**")
+
+        if len(tv_trust_44_64) > 0:
+            pct_of_group = (len(tv_trust_44_64) / len(age_44_64_df)) * 100
+            report_lines.append(f"- Доля от группы 44-64: {pct_of_group:.1f}%")
+
+            # Family trust
+            family_trust_pct = (
+                tv_trust_44_64[col_trust_surroundings]
+                .astype(str)
+                .str.contains("Большинству людей можно доверять", case=False)
+                .sum()
+                / len(tv_trust_44_64)
+            ) * 100
+            report_lines.append(f"- Доверяют семье и близким: {family_trust_pct:.1f}%")
+
+            # Education breakdown
+            higher_edu_pct = (
+                tv_trust_44_64[col_edu]
+                .astype(str)
+                .str.contains("высшее", case=False, na=False)
+                .sum()
+                / len(tv_trust_44_64)
+            ) * 100
+            report_lines.append(f"- С высшим образованием: {higher_edu_pct:.1f}%")
+
+            secondary_edu_pct = (
+                tv_trust_44_64[col_edu]
+                .astype(str)
+                .str.contains("среднее", case=False, na=False)
+                .sum()
+                / len(tv_trust_44_64)
+            ) * 100
+            report_lines.append(f"- Со средним образованием: {secondary_edu_pct:.1f}%")
+
+            # Income distribution
+            income_dist = (
+                tv_trust_44_64[col_income]
+                .apply(classify_income)
+                .value_counts(normalize=True)
+                * 100
+            )
+            report_lines.append("- Распределение по доходу:")
+            for income_level in ["Low", "Medium", "High"]:
+                if income_level in income_dist:
+                    income_labels = {"Low": "Низкий", "Medium": "Средний", "High": "Высокий"}
+                    report_lines.append(
+                        f"  - {income_labels[income_level]}: {income_dist[income_level]:.1f}%"
+                    )
+
+        report_lines.append("")
+        report_lines.append("**Не доверяют ТВ (44-64 года):**")
+
+        if len(tv_distrust_44_64) > 0:
+            pct_of_group = (len(tv_distrust_44_64) / len(age_44_64_df)) * 100
+            report_lines.append(f"- Доля от группы 44-64: {pct_of_group:.1f}%")
+
+            # Family trust
+            family_trust_pct = (
+                tv_distrust_44_64[col_trust_surroundings]
+                .astype(str)
+                .str.contains("Большинству людей можно доверять", case=False)
+                .sum()
+                / len(tv_distrust_44_64)
+            ) * 100
+            report_lines.append(f"- Доверяют семье и близким: {family_trust_pct:.1f}%")
+
+            # Education breakdown
+            higher_edu_pct = (
+                tv_distrust_44_64[col_edu]
+                .astype(str)
+                .str.contains("высшее", case=False, na=False)
+                .sum()
+                / len(tv_distrust_44_64)
+            ) * 100
+            report_lines.append(f"- С высшим образованием: {higher_edu_pct:.1f}%")
+
+            secondary_edu_pct = (
+                tv_distrust_44_64[col_edu]
+                .astype(str)
+                .str.contains("среднее", case=False, na=False)
+                .sum()
+                / len(tv_distrust_44_64)
+            ) * 100
+            report_lines.append(f"- Со средним образованием: {secondary_edu_pct:.1f}%")
+
+            # Income distribution
+            income_dist = (
+                tv_distrust_44_64[col_income]
+                .apply(classify_income)
+                .value_counts(normalize=True)
+                * 100
+            )
+            report_lines.append("- Распределение по доходу:")
+            for income_level in ["Low", "Medium", "High"]:
+                if income_level in income_dist:
+                    income_labels = {"Low": "Низкий", "Medium": "Средний", "High": "Высокий"}
+                    report_lines.append(
+                        f"  - {income_labels[income_level]}: {income_dist[income_level]:.1f}%"
+                    )
+
+        report_lines.append("")
+        report_lines.append("**Сравнительный анализ (44-64 года):**")
+
+        if len(tv_trust_44_64) > 0 and len(tv_distrust_44_64) > 0:
+            # Compare family trust
+            trust_family = (
+                tv_trust_44_64[col_trust_surroundings]
+                .astype(str)
+                .str.contains("Большинству людей можно доверять", case=False)
+                .sum()
+                / len(tv_trust_44_64)
+            ) * 100
+
+            distrust_family = (
+                tv_distrust_44_64[col_trust_surroundings]
+                .astype(str)
+                .str.contains("Большинству людей можно доверять", case=False)
+                .sum()
+                / len(tv_distrust_44_64)
+            ) * 100
+
+            diff_family = trust_family - distrust_family
+            report_lines.append(
+                f"- Разница в доверии семье: {diff_family:+.1f}% п.п. (Доверяющие ТВ {'больше' if diff_family > 0 else 'меньше'} доверяют семье)"
+            )
+
+            # Compare higher education
+            trust_edu = (
+                tv_trust_44_64[col_edu]
+                .astype(str)
+                .str.contains("высшее", case=False, na=False)
+                .sum()
+                / len(tv_trust_44_64)
+            ) * 100
+
+            distrust_edu = (
+                tv_distrust_44_64[col_edu]
+                .astype(str)
+                .str.contains("высшее", case=False, na=False)
+                .sum()
+                / len(tv_distrust_44_64)
+            ) * 100
+
+            diff_edu = trust_edu - distrust_edu
+            report_lines.append(
+                f"- Разница в высшем образовании: {diff_edu:+.1f}% п.п. ({'Доверяющие' if diff_edu > 0 else 'Не доверяющие'} ТВ чаще имеют высшее образование)"
+            )
+
+            # Compare income
+            trust_high_income = (
+                tv_trust_44_64[col_income]
+                .apply(classify_income)
+                .isin(["High"])
+                .sum()
+                / len(tv_trust_44_64)
+            ) * 100
+
+            distrust_high_income = (
+                tv_distrust_44_64[col_income]
+                .apply(classify_income)
+                .isin(["High"])
+                .sum()
+                / len(tv_distrust_44_64)
+            ) * 100
+
+            diff_income = trust_high_income - distrust_high_income
+            report_lines.append(
+                f"- Разница в высоком доходе: {diff_income:+.1f}% п.п. ({'Доверяющие' if diff_income > 0 else 'Не доверяющие'} ТВ чаще имеют высокий доход)"
+            )
+
+    report_lines.append("")
 
     with open("report.md", "w") as f:
         f.write("\n".join(report_lines))
