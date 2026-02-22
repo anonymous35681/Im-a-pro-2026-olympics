@@ -57,14 +57,14 @@ def run() -> None:
         "Затрудняюсь ответить",
     ]
 
-    # Colors (Neon/Bright matching reference)
+    # Colors (New color scheme)
     colors = {
-        "Ежедневно": "#FF0055",  # Bright Pink/Red
-        "По несколько раз в неделю": "#FF8800",  # Bright Orange
-        "По несколько раз в месяц": "#FFFF00",  # Bright Yellow
-        "По несколько раз в год": "#00FF55",  # Bright Green
-        "Не сталкивался": "#00FFFF",  # Cyan
-        "Затрудняюсь ответить": "#888888",  # Gray
+        "Ежедневно": "#E06561",  # Red
+        "По несколько раз в неделю": "#F0DC58",  # Yellow
+        "По несколько раз в месяц": "#77B96E",  # Green
+        "По несколько раз в год": "#82C2AB",  # Cyan
+        "Не сталкивался": "#81A6DF",  # Blue
+        "Затрудняюсь ответить": "#494949",  # Gray
     }
 
     data_rows = []
@@ -132,7 +132,7 @@ def run() -> None:
                 textposition="auto",
                 hovertemplate=f"<b>{cat}</b><br>%{{y}}: %{{x:.1f}}%<extra></extra>",
                 # Add thin black border for separation
-                marker_line_color="black",
+                marker_line_color="#FFFFFF",
                 marker_line_width=1.5,
             )
         )
@@ -142,21 +142,21 @@ def run() -> None:
             "text": "Частота столкновения с фейками по источникам<br><span style='font-size: 16px; color: #CCCCCC'>(Соцсети и Телеграм — главные каналы распространения)</span>",
             "x": 0.5,
             "xanchor": "center",
-            "font": {"size": 22, "color": "#FFFFFF"},
+            "font": {"size": 22, "color": "#494949"},
         },
         barmode="stack",  # Standard stacked bar
         xaxis={
             "title": "",
             "tickvals": [0, 20, 40, 60, 80, 100],
             "ticktext": ["0%", "20%", "40%", "60%", "80%", "100%"],
-            "gridcolor": "#333333",
+            "gridcolor": "#CCCCCC",
             "zeroline": False,
-            "tickfont": {"size": 12, "color": "#FFFFFF"},
+            "tickfont": {"size": 12, "color": "#494949"},
             "range": [0, 100],  # Force 0-100 scale
         },
         yaxis={
             "title": "",
-            "tickfont": {"size": 14, "color": "#FFFFFF"},
+            "tickfont": {"size": 14, "color": "#494949"},
         },
         legend={
             "orientation": "h",
@@ -164,13 +164,13 @@ def run() -> None:
             "y": -0.15,
             "xanchor": "center",
             "x": 0.5,
-            "font": {"color": "#FFFFFF", "size": 12},
-            "bgcolor": "rgba(0,0,0,0)",
+            "font": {"color": "#494949", "size": 12},
+            "bgcolor": "rgba(255,255,255,0)",
             # Reverse legend order to match visual stacking (Left-to-Right)
             "traceorder": "normal",
         },
-        paper_bgcolor="#000000",  # Pure black background
-        plot_bgcolor="#000000",
+        paper_bgcolor="#FFFFFF",  # White background
+        plot_bgcolor="#FFFFFF",
         margin={"l": 120, "r": 50, "t": 100, "b": 100},
         height=700,
         width=1200,

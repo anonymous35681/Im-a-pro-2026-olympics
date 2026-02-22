@@ -142,7 +142,7 @@ def run() -> None:
     fig = go.Figure()
 
     # Colors
-    color_map = {"Росстат": "#00FFFF", "Опрос": "#FF0055"}  # Cyan, Pink/Red
+    color_map = {"Росстат": "#82C2AB", "Опрос": "#E06561"}  # Cyan, Red
 
     # Order of age groups for Y-axis
     y_order = labels  # ["18-24", "25-34", ...]
@@ -150,22 +150,57 @@ def run() -> None:
     # Add traces
     for source in ["Росстат", "Опрос"]:
         subset = df_pivot[df_pivot["Source"] == source]
+
+        # First add outline layers (black text with small offset)
+        for idx, row in subset.iterrows():
+            for dx, dy in [(-0.5, -0.5), (-0.5, 0.5), (0.5, -0.5), (0.5, 0.5)]:
+                fig.add_trace(
+                    go.Scatter(
+                        x=[row["Skew"]],
+                        y=[row["AgeGroup"]],
+                        mode="text",
+                        text=[f"{row['Skew']:+.1f}%"],
+                        textposition="middle center",
+                        textfont={
+                            "size": 14,
+                            "color": "black",
+                            "family": "Arial",
+                        },
+                        showlegend=False,
+                        hoverinfo="skip",
+                    )
+                )
+
+        # Then add main white text on top
         fig.add_trace(
             go.Scatter(
                 x=subset["Skew"],
                 y=subset["AgeGroup"],
-                mode="markers",
+                mode="markers+text",
                 name=source,
                 marker={
                     "color": color_map[source],
-                    "size": 20,
+                    "size": 50,
                     "line": {"width": 2, "color": "white"},
+                },
+                text=subset.apply(
+                    lambda row: f"{row['Skew']:+.1f}%",
+                    axis=1
+                ),
+                textposition="middle center",
+                textfont={
+                    "size": 14,
+                    "color": "white",
+                    "family": "Arial",
+                    "weight": "bold",
                 },
                 showlegend=True,
                 hoverinfo="x+y+name",
                 hovertemplate="%{y}<br>"
                 + source
-                + "<br>Сдвиг: %{x:.1f}%<br>(< 0: Город, > 0: Село)<extra></extra>",
+                + "<br>Город: " + subset["City"].apply(lambda x: f"{x:.1f}%") + "<br>"
+                + "Село: " + subset["Village"].apply(lambda x: f"{x:.1f}%") + "<br>"
+                + "Сдвиг: %{x:.1f}%<br>(< 0: Город, > 0: Село)<extra></extra>",
             )
         )
 
@@ -184,11 +219,11 @@ def run() -> None:
             "text": "Демографический перекос: Город vs Село<br>(Росстат vs Опрос)",
             "x": 0.5,
             "xanchor": "center",
-            "font": {"size": 24, "color": "#FFFFFF"},
+            "font": {"size": 24, "color": "#494949"},
         },
-        font={"size": 14, "color": "#FFFFFF"},
-        plot_bgcolor="#000000",
-        paper_bgcolor="#000000",
+        font={"size": 14, "color": "#494949"},
+        plot_bgcolor="#FFFFFF",
+        paper_bgcolor="#FFFFFF",
         margin={"l": 50, "r": 50, "t": 120, "b": 100},
         height=700,
         legend={
@@ -206,15 +241,15 @@ def run() -> None:
             "ticktext": tick_text,
             "title": "Сдвиг (%)",
             "showgrid": True,
-            "gridcolor": "#333333",
+            "gridcolor": "#CCCCCC",
             "zeroline": True,
-            "zerolinecolor": "#FFFFFF",
+            "zerolinecolor": "#494949",
             "zerolinewidth": 2,
             "range": [-limit - 0.5, limit + 0.5],
         },
         yaxis={
             "showgrid": True,
-            "gridcolor": "#333333",
+            "gridcolor": "#CCCCCC",
             "categoryorder": "array",
             "categoryarray": y_order,
             "tickfont": {"size": 14},
@@ -229,7 +264,7 @@ def run() -> None:
         yref="paper",
         text="Больше в городе",
         showarrow=False,
-        font={"size": 18, "color": "#FFFFFF"},
+        font={"size": 18, "color": "#494949"},
     )
     fig.add_annotation(
         x=limit / 2,
@@ -238,7 +273,7 @@ def run() -> None:
         yref="paper",
         text="Больше в селе",
         showarrow=False,
-        font={"size": 18, "color": "#FFFFFF"},
+        font={"size": 18, "color": "#494949"},
     )
 
     # Arrows
@@ -254,7 +289,7 @@ def run() -> None:
         arrowhead=2,
         arrowsize=1,
         arrowwidth=2,
-        arrowcolor="white",
+        arrowcolor="#494949",
     )
     # Right Arrow (Village)
     fig.add_annotation(
@@ -268,7 +303,7 @@ def run() -> None:
         arrowhead=2,
         arrowsize=1,
         arrowwidth=2,
-        arrowcolor="white",
+        arrowcolor="#494949",
     )
 
     output_path = OUTPUT_DIR / "graph9.png"

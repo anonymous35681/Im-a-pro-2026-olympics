@@ -158,7 +158,7 @@ def save_dumbbell_plot(
                 x=[i, i],
                 y=[survey_values[i], reference_values[i]],
                 mode="lines",
-                line={"color": "#9CA3AF", "width": 2},
+                line={"color": "#CCCCCC", "width": 2},
                 showlegend=False,
                 hoverinfo="none",
             )
@@ -170,7 +170,7 @@ def save_dumbbell_plot(
             y=survey_values,
             mode="markers",
             name=survey_label,
-            marker={"color": "#0EA5E9", "size": 12},
+            marker={"color": "#82C2AB", "size": 12},
             customdata=channel_names,
             hovertemplate=(
                 "<b>%{customdata}</b><br>" + survey_label + ": %{y:.1f}%<extra></extra>"
@@ -184,7 +184,7 @@ def save_dumbbell_plot(
             y=reference_values,
             mode="markers",
             name="Официальная статистика",
-            marker={"color": "#EF4444", "size": 12},
+            marker={"color": "#E06561", "size": 12},
             customdata=channel_names,
             hovertemplate=(
                 "<b>%{customdata}</b><br>"
@@ -201,12 +201,12 @@ def save_dumbbell_plot(
             y=mid_y,
             text=f"{diff:+.1f} п.п.",
             showarrow=False,
-            font={"size": 11, "color": "#374151"},
+            font={"size": 11, "color": "#494949"},
             bgcolor="rgba(255,255,255,0.85)",
         )
 
     fig.update_layout(
-        title={"text": title, "x": 0.5},
+        title={"text": title, "x": 0.5, "font": {"color": "#494949"}},
         xaxis={
             "tickmode": "array",
             "tickvals": x_pos,
@@ -214,13 +214,14 @@ def save_dumbbell_plot(
             "tickangle": -20,
             "title": "",
             "showgrid": False,
+            "tickfont": {"color": "#494949"},
         },
-        yaxis={"title": "Доля, %", "gridcolor": "#E5E7EB"},
-        plot_bgcolor="white",
-        paper_bgcolor="white",
+        yaxis={"title": "Доля, %", "gridcolor": "#CCCCCC", "tickfont": {"color": "#494949"}, "titlefont": {"color": "#494949"}},
+        plot_bgcolor="#FFFFFF",
+        paper_bgcolor="#FFFFFF",
         height=760,
         margin={"l": 90, "r": 30, "t": 90, "b": 140},
-        legend={"orientation": "h", "x": 0.5, "xanchor": "center", "y": 1.04},
+        legend={"orientation": "h", "x": 0.5, "xanchor": "center", "y": 1.04, "font": {"color": "#494949"}},
     )
 
     fig.write_image(output_path, width=1700, height=900, scale=2)
@@ -245,7 +246,7 @@ def save_denominator_effect_plot(
             x=channel_names,
             y=all_values,
             name=f"От всех респондентов (n={n_all})",
-            marker_color="#93C5FD",
+            marker_color="#81A6DF",
         )
     )
     fig.add_trace(
@@ -253,7 +254,7 @@ def save_denominator_effect_plot(
             x=channel_names,
             y=tv_users_values,
             name=f"Только пользователи ТВ (n={n_tv_users})",
-            marker_color="#60A5FA",
+            marker_color="#82C2AB",
         )
     )
     fig.add_trace(
@@ -261,7 +262,7 @@ def save_denominator_effect_plot(
             x=channel_names,
             y=open_values,
             name=f"Ответившие на вопрос 16 (n={n_open})",
-            marker_color="#2563EB",
+            marker_color="#77B96E",
         )
     )
     fig.add_trace(
@@ -270,8 +271,8 @@ def save_denominator_effect_plot(
             y=official_values,
             mode="lines+markers",
             name="Официальная статистика",
-            marker={"size": 10, "color": "#DC2626"},
-            line={"width": 2, "color": "#DC2626"},
+            marker={"size": 10, "color": "#E06561"},
+            line={"width": 2, "color": "#E06561"},
         )
     )
 
@@ -279,15 +280,16 @@ def save_denominator_effect_plot(
         title={
             "text": "Влияние базы расчета на доли каналов (Топ-7)",
             "x": 0.5,
+            "font": {"color": "#494949"},
         },
-        xaxis={"title": "", "tickangle": -20},
-        yaxis={"title": "Доля, %", "gridcolor": "#E5E7EB"},
+        xaxis={"title": "", "tickangle": -20, "tickfont": {"color": "#494949"}},
+        yaxis={"title": "Доля, %", "gridcolor": "#CCCCCC", "tickfont": {"color": "#494949"}, "titlefont": {"color": "#494949"}},
         barmode="group",
-        plot_bgcolor="white",
-        paper_bgcolor="white",
+        plot_bgcolor="#FFFFFF",
+        paper_bgcolor="#FFFFFF",
         height=760,
         margin={"l": 90, "r": 30, "t": 90, "b": 140},
-        legend={"orientation": "h", "x": 0.5, "xanchor": "center", "y": 1.08},
+        legend={"orientation": "h", "x": 0.5, "xanchor": "center", "y": 1.08, "font": {"color": "#494949"}},
     )
 
     fig.write_image(output_path, width=1800, height=900, scale=2)

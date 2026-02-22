@@ -6,8 +6,8 @@ from config import OUTPUT_DIR, ROOT_DIR
 from style import TEXT_COLOR, apply_global_style
 
 # Custom colors for this graph
-TRUST_COLOR = "#FF9900"  # Orange
-DISTRUST_COLOR = "#00BFFF"  # Deep Sky Blue
+TRUST_COLOR = "#E06561"  # Red
+DISTRUST_COLOR = "#82C2AB"  # Cyan
 
 
 def run() -> None:
@@ -57,8 +57,8 @@ def run() -> None:
         y=res_df["channel"],
         xmin=res_df["distrust"],
         xmax=res_df["trust"],
-        color="white",
-        alpha=0.3,
+        color="#CCCCCC",
+        alpha=0.5,
         linewidth=2,
     )
 
@@ -115,8 +115,8 @@ def run() -> None:
     plt.xlabel("Доля респондентов (%)", fontsize=12, labelpad=15)
     plt.xlim(0, max(res_df["trust"].max(), res_df["distrust"].max()) + 10) # Add some padding
 
-    plt.legend(loc="lower right", frameon=True, facecolor="black", edgecolor="white")
-    plt.grid(axis="x", color="white", alpha=0.1, linestyle="--")
+    plt.legend(loc="lower right", frameon=True, facecolor="#FFFFFF", edgecolor="#494949")
+    plt.grid(axis="x", color="#CCCCCC", alpha=0.5, linestyle="--")
     plt.tight_layout()
 
     output_path = OUTPUT_DIR / "graph12.png"
