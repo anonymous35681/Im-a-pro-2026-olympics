@@ -1,4 +1,5 @@
 import re
+
 import pandas as pd
 import plotly.graph_objects as go
 from loguru import logger
@@ -7,8 +8,8 @@ from config import OUTPUT_DIR, ROOT_DIR
 
 
 def run() -> None:
-    """Generate Graph 11: Diverging stacked bar chart of fake news frequency by source."""
-    logger.info("Generating Graph 11: Fake news frequency by source (Diverging Bar).")
+    """Generate Graph 11: 100% Stacked bar chart of fake news frequency by source."""
+    logger.info("Generating Graph 11: Fake news frequency by source (Stacked Bar).")
 
     # Load dataset
     df = pd.read_csv(ROOT_DIR / "data" / "origin_dataset.csv")
@@ -36,24 +37,29 @@ def run() -> None:
     }
 
     # Frequency scale mapping (Value -> Category Name)
-    # Ordered for the chart (Left to Right visually)
-    # Daily -> Weekly -> (Center) -> Monthly -> Yearly -> Never
+    # Ordered Left to Right: Daily -> Weekly -> Monthly -> Yearly -> Never
     freq_map = {
         "1. Практически ежедневно": "Ежедневно",
-        "2. По нескольку раз в неделю": "Раз в неделю",
-        "3. По нескольку раз в месяц": "Раз в месяц",
+        "2. По нескольку раз в неделю": "По несколько раз в неделю",
+        "3. По нескольку раз в месяц": "По несколько раз в месяц",
         "4. Несколько раз в год": "Раз в год",
         "5. Не сталкивался": "Не сталкивался",
     }
 
-    # Categories to exclude from normalization
-    exclude_cats = ["6. Затрудняюсь ответить", "#NULL!"]
+    # Order for stacking (Left to Right)
+    stack_order = [
+        "Ежедневно",
+        "По несколько раз в неделю",
+        "По несколько раз в месяц",
+        "Раз в год",
+        "Не сталкивался",
+    ]
 
-    # Colors (Neon/Bright as requested)
+    # Colors (Neon/Bright matching reference)
     colors = {
-        "Ежедневно": "#FF0055",  # Bright Red/Pink
-        "Раз в неделю": "#FF8800",  # Bright Orange
-        "Раз в месяц": "#FFFF00",  # Bright Yellow
+        "Ежедневно": "#FF0055",  # Bright Pink/Red
+        "По несколько раз в неделю": "#FF8800",  # Bright Orange
+        "По несколько раз в месяц": "#FFFF00",  # Bright Yellow
         "Раз в год": "#00FF55",  # Bright Green
         "Не сталкивался": "#00FFFF",  # Cyan
     }
@@ -101,47 +107,16 @@ def run() -> None:
     # Convert to DataFrame
     plot_df = pd.DataFrame(data_rows)
 
-    # Sort by "Daily + Weekly" (Frequency) descending,
-    # but put Radio at bottom if N is small?
-    # The reference image has Radio (highest freq) at bottom.
-    # I'll sort by Frequency but maybe the user wants the exact order from image?
-    # The user said "approximately like this". Frequency sort is standard.
-    # However, to match the "Reference" feel where Radio is an outlier/small base,
-    # I will sort by N (Count) descending?
-    # Telegram(207), Internet(305), TV(258)... Social(567) is max.
-    # Let's stick to Frequency sort (Daily + Weekly) as it highlights the "problematic" channels.
-    plot_df["High_Freq_Sum"] = plot_df["Ежедневно"] + plot_df["Раз в неделю"]
+    # Sort by "Daily + Weekly" (Frequency) descending
+    plot_df["High_Freq_Sum"] = plot_df["Ежедневно"] + plot_df["По несколько раз в неделю"]
     plot_df = plot_df.sort_values(
         "High_Freq_Sum", ascending=True
     )  # Ascending for horizontal bar (top is highest)
 
     fig = go.Figure()
 
-    # Left side: Daily, Weekly
-    left_cats = ["Раз в неделю", "Ежедневно"]  # Inner to Outer
-
-    for cat in left_cats:
-        values = plot_df[cat]
-        fig.add_trace(
-            go.Bar(
-                y=plot_df["Source"],
-                x=-values,
-                name=cat,
-                orientation="h",
-                marker_color=colors[cat],
-                text=values.apply(lambda x: f"{x:.0f}%" if x > 3 else ""),
-                textposition="auto",
-                customdata=values,
-                hovertemplate=f"<b>{cat}</b><br>%{{y}}: %{{customdata:.1f}}%<extra></extra>",
-                # Ensure text is displayed for negative bars
-                insidetextanchor="middle",
-            )
-        )
-
-    # Right side: Monthly, Yearly, Never
-    right_cats = ["Раз в месяц", "Раз в год", "Не сталкивался"]  # Inner to Outer
-
-    for cat in right_cats:
+    # Add traces in stack order
+    for cat in stack_order:
         values = plot_df[cat]
         fig.add_trace(
             go.Bar(
@@ -152,14 +127,12 @@ def run() -> None:
                 marker_color=colors[cat],
                 text=values.apply(lambda x: f"{x:.0f}%" if x > 3 else ""),
                 textposition="auto",
-                customdata=values,
-                hovertemplate=f"<b>{cat}</b><br>%{{y}}: %{{customdata:.1f}}%<extra></extra>",
+                hovertemplate=f"<b>{cat}</b><br>%{{y}}: %{{x:.1f}}%<extra></extra>",
+                # Add thin black border for separation
+                marker_line_color="black",
+                marker_line_width=1.5,
             )
         )
-
-    # X-axis setup
-    tick_vals = [-100, -80, -60, -40, -20, 0, 20, 40, 60, 80, 100]
-    tick_text = [str(abs(x)) + "%" if x != 0 else "0%" for x in tick_vals]
 
     fig.update_layout(
         title={
@@ -168,16 +141,15 @@ def run() -> None:
             "xanchor": "center",
             "font": {"size": 22, "color": "#FFFFFF"},
         },
-        barmode="relative",
+        barmode="stack",  # Standard stacked bar
         xaxis={
             "title": "",
-            "tickvals": tick_vals,
-            "ticktext": tick_text,
+            "tickvals": [0, 20, 40, 60, 80, 100],
+            "ticktext": ["0%", "20%", "40%", "60%", "80%", "100%"],
             "gridcolor": "#333333",
-            "zeroline": True,
-            "zerolinecolor": "#FFFFFF",
-            "zerolinewidth": 1,
+            "zeroline": False,
             "tickfont": {"size": 12, "color": "#FFFFFF"},
+            "range": [0, 100],  # Force 0-100 scale
         },
         yaxis={
             "title": "",
@@ -191,8 +163,10 @@ def run() -> None:
             "x": 0.5,
             "font": {"color": "#FFFFFF", "size": 12},
             "bgcolor": "rgba(0,0,0,0)",
+            # Reverse legend order to match visual stacking (Left-to-Right)
+            "traceorder": "normal",
         },
-        paper_bgcolor="#000000",  # Pure black background like reference
+        paper_bgcolor="#000000",  # Pure black background
         plot_bgcolor="#000000",
         margin={"l": 120, "r": 50, "t": 100, "b": 100},
         height=700,
