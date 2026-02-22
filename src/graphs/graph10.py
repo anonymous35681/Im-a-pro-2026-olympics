@@ -193,7 +193,7 @@ def save_dumbbell_plot(
         )
     )
 
-    for i, channel in enumerate(channel_names):
+    for i, _channel in enumerate(channel_names):
         diff = survey_values[i] - reference_values[i]
         mid_y = (survey_values[i] + reference_values[i]) / 2
         fig.add_annotation(
@@ -431,7 +431,7 @@ def run() -> None:
 
     def to_pct(counter: Counter, denom: int) -> dict[str, float]:
         if denom <= 0:
-            return {channel: 0.0 for channel in channels_popularity}
+            return dict.fromkeys(channels_popularity, 0.0)
         return {
             channel: (counter.get(channel, 0) / denom) * 100
             for channel in channels_popularity
