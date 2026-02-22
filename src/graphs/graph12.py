@@ -3,7 +3,7 @@ import pandas as pd
 from loguru import logger
 
 from config import OUTPUT_DIR, ROOT_DIR
-from style import TEXT_COLOR, apply_global_style
+from style import apply_global_style
 
 # Custom colors for this graph
 TRUST_COLOR = "#E06561"  # Red
@@ -41,16 +41,14 @@ def run() -> None:
         distrust_mask = df[col].isin(["Пользуюсь, но не доверяю", "Не доверяю"])
         distrust_pct = (distrust_mask.sum() / total) * 100
 
-        results.append(
-            {"channel": label, "trust": trust_pct, "distrust": distrust_pct}
-        )
+        results.append({"channel": label, "trust": trust_pct, "distrust": distrust_pct})
 
     # Convert to DataFrame and sort by Trust for better visualization
     res_df = pd.DataFrame(results).sort_values("trust", ascending=True)
 
     # Visualization
     apply_global_style()
-    plt.figure(figsize=(10, 8))
+    plt.figure(figsize=(10, 10))
 
     # Horizontal lines connecting the dots
     plt.hlines(
@@ -67,7 +65,7 @@ def run() -> None:
         res_df["distrust"],
         res_df["channel"],
         color=DISTRUST_COLOR,
-        s=150,
+        s=250,
         label="Не доверяю (%)",
         zorder=3,
     )
@@ -77,50 +75,49 @@ def run() -> None:
         res_df["trust"],
         res_df["channel"],
         color=TRUST_COLOR,
-        s=150,
+        s=250,
         label="Доверяю (%)",
         zorder=3,
     )
 
-    # Add text labels
-    for _, row in res_df.iterrows():
-        # Label for Distrust
-        plt.text(
-            row["distrust"] - 1.5,
-            row["channel"],
-            f"{row['distrust']:.1f}%",
-            va="center",
-            ha="right",
-            color=DISTRUST_COLOR,
-            fontweight="bold",
-        )
-        
-        # Label for Trust
-        plt.text(
-            row["trust"] + 1.5,
-            row["channel"],
-            f"{row['trust']:.1f}%",
-            va="center",
-            ha="left",
-            color=TRUST_COLOR,
-            fontweight="bold",
-        )
-
     plt.title(
-        "Уровень доверия и недоверия к источникам информации\n(ТВ и Telegram — лидеры доверия среди медиа)",
+        "Доверие и недоверие к СМИ",
         fontsize=16,
-        pad=25,
-        color=TEXT_COLOR,
+        pad=35,
+        color="#494949",
+        loc="center",
+        fontweight="bold",
     )
-    plt.xlabel("Доля респондентов (%)", fontsize=12, labelpad=15)
-    plt.xlim(0, max(res_df["trust"].max(), res_df["distrust"].max()) + 10) # Add some padding
 
-    plt.legend(loc="lower right", frameon=True, facecolor="#FFFFFF", edgecolor="#494949")
+    plt.xlabel("Доля респондентов (%)", fontsize=12, labelpad=15)
+    plt.xlim(
+        0, max(res_df["trust"].max(), res_df["distrust"].max()) + 10
+    )  # Add some padding
+
+    plt.legend(
+        loc="upper center",
+        bbox_to_anchor=(0.5, 1.05),
+        ncol=2,
+        frameon=True,
+        facecolor="#FFFFFF",
+        edgecolor="#494949",
+    )
     plt.grid(axis="x", color="#CCCCCC", alpha=0.5, linestyle="--")
     plt.tight_layout()
 
     output_path = OUTPUT_DIR / "graph12.png"
-    plt.savefig(output_path, dpi=300)
+    plt.savefig(output_path, dpi=300, bbox_inches="tight")
+
+    # Add footer
+    plt.annotate(
+        "Источники: Опрос Мордовского государственного университет имени Н. П. Огарёва",
+        xy=(0, 0),
+        xycoords="figure points",
+        fontsize=10,
+        color="#494949",
+        xytext=(10, 3),
+    )
+    plt.savefig(output_path, dpi=300, bbox_inches="tight")
     plt.close()
 
     logger.success(f"Graph 12 saved to: {output_path}")

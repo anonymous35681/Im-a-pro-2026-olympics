@@ -64,7 +64,7 @@ def run() -> None:
         "По несколько раз в месяц": "#77B96E",  # Green
         "По несколько раз в год": "#82C2AB",  # Cyan
         "Не сталкивался": "#81A6DF",  # Blue
-        "Затрудняюсь ответить": "#494949",  # Gray
+        "Затрудняюсь ответить": "#999999",  # Lighter gray
     }
 
     data_rows = []
@@ -111,10 +111,26 @@ def run() -> None:
     plot_df = pd.DataFrame(data_rows)
 
     # Sort by "Daily + Weekly" (Frequency) descending
-    plot_df["High_Freq_Sum"] = plot_df["Ежедневно"] + plot_df["По несколько раз в неделю"]
+    plot_df["High_Freq_Sum"] = (
+        plot_df["Ежедневно"] + plot_df["По несколько раз в неделю"]
+    )
     plot_df = plot_df.sort_values(
         "High_Freq_Sum", ascending=True
     )  # Ascending for horizontal bar (top is highest)
+
+    # Calculate overall fake encounter statistics
+    total_encounters = plot_df["Total"].sum()
+
+    # Calculate percentages for each frequency category across all sources
+    overall_stats = {}
+    for cat in stack_order:
+        overall_stats[cat] = (
+            plot_df.apply(
+                lambda row, c=cat: (row[c] / 100) * row["Total"], axis=1
+            ).sum()
+            / total_encounters
+            * 100
+        )
 
     fig = go.Figure()
 
@@ -139,10 +155,12 @@ def run() -> None:
 
     fig.update_layout(
         title={
-            "text": "Частота столкновения с фейками по источникам<br><span style='font-size: 16px; color: #CCCCCC'>(Соцсети и Телеграм — главные каналы распространения)</span>",
+            "text": "Чистота взаимодействия с фейковыми новостями",
             "x": 0.5,
             "xanchor": "center",
-            "font": {"size": 22, "color": "#494949"},
+            "y": 0.98,
+            "yanchor": "top",
+            "font": {"size": 18, "color": "#494949"},
         },
         barmode="stack",  # Standard stacked bar
         xaxis={
@@ -161,7 +179,7 @@ def run() -> None:
         legend={
             "orientation": "h",
             "yanchor": "bottom",
-            "y": -0.15,
+            "y": 1.05,
             "xanchor": "center",
             "x": 0.5,
             "font": {"color": "#494949", "size": 12},
@@ -171,13 +189,26 @@ def run() -> None:
         },
         paper_bgcolor="#FFFFFF",  # White background
         plot_bgcolor="#FFFFFF",
-        margin={"l": 120, "r": 50, "t": 100, "b": 100},
-        height=700,
-        width=1200,
+        margin={"l": 120, "r": 50, "t": 120, "b": 80},
+        height=900,
+        width=1000,
+    )
+
+    # Add footer
+    fig.add_annotation(
+        x=0.45,
+        y=-0.06,
+        xref="paper",
+        yref="paper",
+        text="Источник: Опрос Мордовского государственного университет имени Н. П. Огарёва",
+        showarrow=False,
+        font={"size": 12, "color": "#494949"},
+        xanchor="right",
+        yanchor="top",
     )
 
     output_path = OUTPUT_DIR / "graph11.png"
-    fig.write_image(output_path, scale=2)
+    fig.write_image(output_path, width=1000, height=900, scale=2)
     logger.success(f"Graph 11 saved to {output_path}")
 
 

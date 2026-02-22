@@ -151,55 +151,28 @@ def run() -> None:
     for source in ["Росстат", "Опрос"]:
         subset = df_pivot[df_pivot["Source"] == source]
 
-        # First add outline layers (black text with small offset)
-        for idx, row in subset.iterrows():
-            for dx, dy in [(-0.5, -0.5), (-0.5, 0.5), (0.5, -0.5), (0.5, 0.5)]:
-                fig.add_trace(
-                    go.Scatter(
-                        x=[row["Skew"]],
-                        y=[row["AgeGroup"]],
-                        mode="text",
-                        text=[f"{row['Skew']:+.1f}%"],
-                        textposition="middle center",
-                        textfont={
-                            "size": 14,
-                            "color": "black",
-                            "family": "Arial",
-                        },
-                        showlegend=False,
-                        hoverinfo="skip",
-                    )
-                )
-
-        # Then add main white text on top
+        # Add markers without text
         fig.add_trace(
             go.Scatter(
                 x=subset["Skew"],
                 y=subset["AgeGroup"],
-                mode="markers+text",
+                mode="markers",
                 name=source,
                 marker={
                     "color": color_map[source],
                     "size": 50,
                     "line": {"width": 2, "color": "white"},
                 },
-                text=subset.apply(
-                    lambda row: f"{row['Skew']:+.1f}%",
-                    axis=1
-                ),
-                textposition="middle center",
-                textfont={
-                    "size": 14,
-                    "color": "white",
-                    "family": "Arial",
-                    "weight": "bold",
-                },
                 showlegend=True,
                 hoverinfo="x+y+name",
                 hovertemplate="%{y}<br>"
                 + source
-                + "<br>Город: " + subset["City"].apply(lambda x: f"{x:.1f}%") + "<br>"
-                + "Село: " + subset["Village"].apply(lambda x: f"{x:.1f}%") + "<br>"
+                + "<br>Город: "
+                + subset["City"].apply(lambda x: f"{x:.1f}%")
+                + "<br>"
+                + "Село: "
+                + subset["Village"].apply(lambda x: f"{x:.1f}%")
+                + "<br>"
                 + "Сдвиг: %{x:.1f}%<br>(< 0: Город, > 0: Село)<extra></extra>",
             )
         )
@@ -216,22 +189,24 @@ def run() -> None:
     # Update Layout
     fig.update_layout(
         title={
-            "text": "Демографический перекос: Город vs Село<br>(Росстат vs Опрос)",
+            "text": "<b>Демографические сдвиги в Республике Мордовия</b>",
             "x": 0.5,
             "xanchor": "center",
-            "font": {"size": 24, "color": "#494949"},
+            "y": 0.98,
+            "yanchor": "top",
+            "font": {"size": 18, "color": "#494949"},
         },
         font={"size": 14, "color": "#494949"},
         plot_bgcolor="#FFFFFF",
         paper_bgcolor="#FFFFFF",
-        margin={"l": 50, "r": 50, "t": 120, "b": 100},
+        margin={"l": 50, "r": 80, "t": 150, "b": 120},
         height=700,
         legend={
             "orientation": "h",
             "yanchor": "bottom",
             "y": 1.05,
-            "xanchor": "right",
-            "x": 1,
+            "xanchor": "center",
+            "x": 0.5,
             "font": {"size": 16},
             "bgcolor": "rgba(0,0,0,0)",
         },
@@ -239,75 +214,130 @@ def run() -> None:
             "tickmode": "array",
             "tickvals": tick_vals,
             "ticktext": tick_text,
-            "title": "Сдвиг (%)",
-            "showgrid": True,
-            "gridcolor": "#CCCCCC",
+            "title": "",
+            "showgrid": False,
             "zeroline": True,
-            "zerolinecolor": "#494949",
+            "zerolinecolor": "#CCCCCC",
             "zerolinewidth": 2,
             "range": [-limit - 0.5, limit + 0.5],
         },
         yaxis={
-            "showgrid": True,
-            "gridcolor": "#CCCCCC",
+            "showgrid": False,
             "categoryorder": "array",
             "categoryarray": y_order,
             "tickfont": {"size": 14},
         },
     )
 
-    # Annotations for "City" and "Village"
+    # Add arrow pointing left (towards City) at the top
     fig.add_annotation(
         x=-limit / 2,
-        y=1.05,
+        y=1.08,
         xref="x",
         yref="paper",
-        text="Больше в городе",
-        showarrow=False,
-        font={"size": 18, "color": "#494949"},
-    )
-    fig.add_annotation(
-        x=limit / 2,
-        y=1.05,
-        xref="x",
-        yref="paper",
-        text="Больше в селе",
-        showarrow=False,
-        font={"size": 18, "color": "#494949"},
+        text="",
+        showarrow=True,
+        arrowhead=3,
+        arrowsize=1.5,
+        arrowwidth=2,
+        arrowcolor="#494949",
+        ax=20,
+        ay=0,
     )
 
-    # Arrows
-    # Left Arrow (City)
-    fig.add_annotation(
-        x=-limit / 2,
-        y=1.08,
-        xref="x",
-        yref="paper",
-        ax=40,
-        ay=0,
-        showarrow=True,
-        arrowhead=2,
-        arrowsize=1,
-        arrowwidth=2,
-        arrowcolor="#494949",
-    )
-    # Right Arrow (Village)
+    # Add arrow pointing right (towards Village) at the top
     fig.add_annotation(
         x=limit / 2,
         y=1.08,
         xref="x",
         yref="paper",
-        ax=-40,
+        text="",
+        showarrow=True,
+        arrowhead=3,
+        arrowsize=1.5,
+        arrowwidth=2,
+        arrowcolor="#494949",
+        ax=-20,
         ay=0,
+    )
+
+    # Add "Город" label under the left arrow
+    fig.add_annotation(
+        x=-limit / 2,
+        y=1.02,
+        xref="x",
+        yref="paper",
+        text="Город",
+        showarrow=False,
+        font={"size": 14, "color": "#494949"},
+        xanchor="center",
+        yanchor="bottom",
+    )
+
+    # Add "Село" label under the right arrow
+    fig.add_annotation(
+        x=limit / 2,
+        y=1.02,
+        xref="x",
+        yref="paper",
+        text="Село",
+        showarrow=False,
+        font={"size": 14, "color": "#494949"},
+        xanchor="center",
+        yanchor="bottom",
+    )
+
+    # Add annotation for "Молодёжь" on the left
+    fig.add_annotation(
+        x=-limit + 0.45,
+        y="18-24",
+        xref="x",
+        yref="y",
+        text="Молодёжь",
         showarrow=True,
         arrowhead=2,
         arrowsize=1,
         arrowwidth=2,
         arrowcolor="#494949",
+        ax=40,
+        ay=0,
+        font={"size": 14, "color": "#494949", "weight": "bold"},
+    )
+
+    # Add annotation for "55-64 лет" on the right
+    fig.add_annotation(
+        x=limit + 0.3,
+        y="55-64",
+        xref="x",
+        yref="y",
+        text="55-64 лет",
+        showarrow=True,
+        arrowhead=2,
+        arrowsize=1,
+        arrowwidth=2,
+        arrowcolor="#494949",
+        ax=-30,
+        ay=0,
+        font={"size": 14, "color": "#494949", "weight": "bold"},
+    )
+
+    # Add footer
+    fig.add_annotation(
+        x=0.6,
+        y=-0.08,
+        xref="paper",
+        yref="paper",
+        text="Источники: Росстат, Опрос Мордовского государственного университет имени Н. П. Огарёва",
+        showarrow=False,
+        font={"size": 12, "color": "#494949"},
+        xanchor="right",
+        yanchor="top",
     )
 
     output_path = OUTPUT_DIR / "graph9.png"
-    fig.write_image(output_path, width=1200, height=800, scale=2)
+    fig.write_image(output_path, width=1000, height=1100, scale=2)
+
+    # Add footer as a separate annotation on the image
     logger.success(f"Graph 9 saved to {output_path}")
 
 

@@ -9,6 +9,17 @@ from sentence_transformers import SentenceTransformer, util
 
 from config import OUTPUT_DIR, ROOT_DIR
 
+# Mapping of channel names to their icon files
+CHANNEL_ICONS = {
+    "Первый канал": "First_Chanel.png",
+    "Россия-1": "Russuan_1.png",
+    "НТВ": "NTV.png",
+    "ГТРК 'Мордовия'": "GTRK_Mordivia.png",
+    "Россия-24": "Russia_24.png",
+    "НТМ — Народное телевидение Мордовии": "NVM_Mordovia.png",
+    "РЕН ТВ": "RenTV.png",
+}
+
 OPEN_SOURCES_COLUMN = (
     "16. Вспомните, пожалуйста, названия двух-трех конкретных источников, "
     "из которых Вы обычно получаете новости (напишите)?"
@@ -149,6 +160,8 @@ def save_dumbbell_plot(
     output_path: Path,
 ) -> None:
     """Save dumbbell chart for survey vs reference."""
+    from PIL import Image
+
     fig = go.Figure()
     x_pos = list(range(len(channel_names)))
 
@@ -205,26 +218,100 @@ def save_dumbbell_plot(
             bgcolor="rgba(255,255,255,0.85)",
         )
 
+    # Add icons as annotations
+    assets_dir = ROOT_DIR / "data" / "assets"
+    for i, channel in enumerate(channel_names):
+        icon_file = CHANNEL_ICONS.get(channel)
+        if icon_file:
+            icon_path = assets_dir / icon_file
+            if icon_path.exists():
+                # Load and resize icon
+                img = Image.open(icon_path)
+                img.thumbnail((50, 50), Image.Resampling.LANCZOS)
+
+                # Add as layout image
+                fig.add_layout_image(
+                    {
+                        "source": img,
+                        "xref": "x",
+                        "yref": "paper",
+                        "x": i,
+                        "y": -0.08,
+                        "sizex": 0.5,
+                        "sizey": 0.08,
+                        "xanchor": "center",
+                        "yanchor": "top",
+                        "layer": "below",
+                    }
+                )
+
+    # Create custom tick text with empty strings (only icons will be shown)
+    tick_text = [""] * len(channel_names)
+
     fig.update_layout(
-        title={"text": title, "x": 0.5, "font": {"color": "#494949"}},
+        title={
+            "text": "<b>Спонтанные упоминания ТВ-каналов vs официальная статистика.</b>",
+            "x": 0.5,
+            "xanchor": "center",
+            "y": 0.98,
+            "yanchor": "top",
+            "font": {"size": 18, "color": "#494949"},
+        },
         xaxis={
             "tickmode": "array",
             "tickvals": x_pos,
-            "ticktext": channel_names,
+            "ticktext": tick_text,
             "tickangle": -20,
             "title": "",
             "showgrid": False,
             "tickfont": {"color": "#494949"},
         },
-        yaxis={"title": "Доля, %", "gridcolor": "#CCCCCC", "tickfont": {"color": "#494949"}, "titlefont": {"color": "#494949"}},
+        yaxis={
+            "title": {"text": "Доля, %", "font": {"color": "#494949"}},
+            "gridcolor": "#CCCCCC",
+            "tickfont": {"color": "#494949"},
+        },
         plot_bgcolor="#FFFFFF",
         paper_bgcolor="#FFFFFF",
-        height=760,
-        margin={"l": 90, "r": 30, "t": 90, "b": 140},
-        legend={"orientation": "h", "x": 0.5, "xanchor": "center", "y": 1.04, "font": {"color": "#494949"}},
+        height=1000,
+        width=1000,
+        margin={"l": 90, "r": 30, "t": 120, "b": 250},
+        legend={
+            "orientation": "h",
+            "x": 0.5,
+            "xanchor": "center",
+            "y": 1.02,
+            "font": {"color": "#494949", "size": 12},
+        },
     )
 
-    fig.write_image(output_path, width=1700, height=900, scale=2)
+    # Add methodology note
+    fig.add_annotation(
+        x=-0.05,
+        y=-0.17,
+        xref="paper",
+        yref="paper",
+        text="Метод расчёта: ИИ использовал модель SentenceTransformer для создания векторных представлений (embeddings) упоминаний каналов и официальных названий, затем сравнивал их косинусное сходство.",
+        showarrow=False,
+        font={"size": 12, "color": "#494949"},
+        xanchor="left",
+        yanchor="top",
+    )
+
+    # Add footer
+    fig.add_annotation(
+        x=-0.05,
+        y=-0.21,
+        xref="paper",
+        yref="paper",
+        text="Источники: Сборник «Республика Мордовия глазами социологов», Опрос Мордовского государственного университет имени Н. П. Огарёва",
+        showarrow=False,
+        font={"size": 12, "color": "#494949"},
+        xanchor="left",
+        yanchor="top",
+    )
+
+    fig.write_image(output_path, width=1000, height=1000, scale=2)
     logger.success(f"Saved chart: {output_path}")
 
 
@@ -277,19 +364,24 @@ def save_denominator_effect_plot(
     )
 
     fig.update_layout(
-        title={
-            "text": "Влияние базы расчета на доли каналов (Топ-7)",
-            "x": 0.5,
-            "font": {"color": "#494949"},
-        },
         xaxis={"title": "", "tickangle": -20, "tickfont": {"color": "#494949"}},
-        yaxis={"title": "Доля, %", "gridcolor": "#CCCCCC", "tickfont": {"color": "#494949"}, "titlefont": {"color": "#494949"}},
+        yaxis={
+            "title": {"text": "Доля, %", "font": {"color": "#494949"}},
+            "gridcolor": "#CCCCCC",
+            "tickfont": {"color": "#494949"},
+        },
         barmode="group",
         plot_bgcolor="#FFFFFF",
         paper_bgcolor="#FFFFFF",
         height=760,
-        margin={"l": 90, "r": 30, "t": 90, "b": 140},
-        legend={"orientation": "h", "x": 0.5, "xanchor": "center", "y": 1.08, "font": {"color": "#494949"}},
+        margin={"l": 90, "r": 30, "t": 50, "b": 140},
+        legend={
+            "orientation": "h",
+            "x": 0.5,
+            "xanchor": "center",
+            "y": 1.08,
+            "font": {"color": "#494949"},
+        },
     )
 
     fig.write_image(output_path, width=1800, height=900, scale=2)
@@ -366,14 +458,10 @@ def run() -> None:
     known_channel_names = list(channels_popularity.keys())
     logger.info("Loading sentence transformer model...")
     model = SentenceTransformer("paraphrase-multilingual-MiniLM-L12-v2")
-    known_channel_embeddings = model.encode(
-        known_channel_names, convert_to_tensor=True
-    )
+    known_channel_embeddings = model.encode(known_channel_names, convert_to_tensor=True)
 
     tv_user_mask = df[TV_USAGE_COLUMN].fillna("").astype(str).str.startswith("1.")
-    open_answer_mask = (
-        df[OPEN_SOURCES_COLUMN].fillna("").astype(str).str.strip().ne("")
-    )
+    open_answer_mask = df[OPEN_SOURCES_COLUMN].fillna("").astype(str).str.strip().ne("")
 
     n_all = len(df)
     n_tv_users = int(tv_user_mask.sum())

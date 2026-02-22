@@ -108,7 +108,7 @@ def run() -> None:
 
     # Visualization
     apply_global_style()
-    _, ax = plt.subplots(figsize=(14, 10))
+    _, ax = plt.subplots(figsize=(12, 10))
 
     # X-axis order
     x_order = [*age_labels, "Всего (18-65+)"]
@@ -145,8 +145,31 @@ def run() -> None:
         )
 
         # Plot bubbles
-        # Use fixed size to match the visual reference (uniform bubbles)
-        sizes = [1000] * len(group_data)
+        # Size depends on percentage (scaled for visibility)
+        # Reduced overall size for better fit
+        sizes = [(row.Percentage**1.8) * 1.9 for row in group_data.itertuples()]
+
+        # Determine colors for highlighting
+        # Highlight social media for 18-24 and TV for 45-54
+        face_colors = []
+        edge_colors = []
+        line_widths = []
+
+        for row in group_data.itertuples():
+            source = row.Source
+            age_group = group
+
+            # Highlight conditions: 18-24 + Социальные сети OR 45-54 + Телевидение
+            if (age_group == "18-24" and source == "Социальные сети") or (
+                age_group == "45-54" and source == "Телевидение"
+            ):
+                face_colors.append("#F0DC58")  # Highlight color (yellow)
+                edge_colors.append("#F0DC58")
+                line_widths.append(3)
+            else:
+                face_colors.append(BACKGROUND_COLOR)
+                edge_colors.append(NEON_CYAN)
+                line_widths.append(2)
 
         # Scatter plot for this group
         # Use simple scatter with mapped Y coordinates
@@ -154,32 +177,33 @@ def run() -> None:
             x=[i] * len(group_data),
             y=y_indices,
             s=sizes,
-            c=BACKGROUND_COLOR,  # Fill with background to show ring effect?
-            # Or fill with Cyan? The prompt says "circles... inside written percentage".
-            # Usually bubbles are filled or have an edge.
-            # Let's do: Edge color Cyan, Face color Background (or slightly transparent Cyan), Text inside.
-            edgecolors=NEON_CYAN,
-            linewidths=2,
+            c=face_colors,
+            edgecolors=edge_colors,
+            linewidths=line_widths,
             zorder=3,
         )
 
-        # Add text inside bubbles
+        # Add text inside bubbles (only for highlighted yellow bubbles and "Total" column)
         for y_idx, row in enumerate(group_data.itertuples()):
+            source = row.Source
+            age_group = group
             pct = row.Percentage
-            # Determine font size based on bubble size? Or fixed.
-            # Only show if percentage > some threshold?
-            # Assuming all relevant sources have some usage.
-            ax.text(
-                x=i,
-                y=y_idx,
-                s=f"{pct:.0f}%",
-                color=TEXT_COLOR,
-                ha="center",
-                va="center",
-                fontsize=9,
-                fontweight="bold",
-                zorder=4,
-            )
+
+            # Show percentage for: 1) highlighted bubbles (yellow ones), 2) Total column
+            if (age_group == "18-24" and source == "Социальные сети") or (
+                age_group == "45-54" and source == "Телевидение"
+            ) or age_group == "Всего (18-65+)":
+                ax.text(
+                    x=i,
+                    y=y_idx,
+                    s=f"{pct:.0f}%",
+                    color=TEXT_COLOR,
+                    ha="center",
+                    va="center",
+                    fontsize=9,
+                    fontweight="bold",
+                    zorder=4,
+                )
 
     # Set ticks and labels
     ax.set_xticks(range(len(x_order)))
@@ -199,16 +223,29 @@ def run() -> None:
 
     # Title
     # Calculate key insight: Which source is most popular overall?
-    top_source = total_percentages.sort_values("Percentage", ascending=False).iloc[0]
-    title_text = (
-        f"Телевидение и соцсети — главные источники информации во всех возрастных группах\n"
-        f"(Лидер: {top_source['Source']} — {top_source['Percentage']:.0f}%)"
+    title_text = "Самые востребованные источники информации по возрасту."
+
+    plt.title(
+        title_text,
+        fontsize=16,
+        pad=30,
+        color=TEXT_COLOR,
+        loc="center",
+        fontweight="bold",
     )
 
-    plt.title(title_text, fontsize=16, pad=30, color=TEXT_COLOR, loc="left")
+    # Adjust layout with proper margins to prevent cutoff
+    plt.subplots_adjust(left=0.25, right=0.95, top=0.88, bottom=0.08)
 
-    # Adjust layout
-    plt.tight_layout()
+    # Add footer
+    plt.annotate(
+        "Источник: Опрос Мордовского государственного университет имени Н. П. Огарёва",
+        xy=(0, 0),
+        xycoords="figure points",
+        fontsize=10,
+        color="#494949",
+        xytext=(10, 3),
+    )
 
     # Save
     output_path = OUTPUT_DIR / "graph8.png"
