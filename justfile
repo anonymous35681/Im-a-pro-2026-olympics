@@ -20,3 +20,7 @@ convert_demographics:
 # Generate all graphics (or specific graph with number)
 run number="":
     uv run src/main.py {{number}}
+
+# Run research
+research:
+    uv run ./src/scripts/research.py
