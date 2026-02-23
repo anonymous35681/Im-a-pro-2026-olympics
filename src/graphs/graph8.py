@@ -39,10 +39,10 @@ def run() -> None:
         "[Объединенный] Телевидение": "Телевидение",
         "[Объединенный] Социальные сети": "Социальные сети",
         "[Объединенный] Интернет-издания": "Интернет-издания",
-        "[Объединенный] Друзья": "Друзья, знакомые, родственники",
+        "[Объединенный] Друзья": "Друзья",
         "[Объединенный] Газеты": "Печатные газеты",
         "[Объединенный] Журналы": "Печатные журналы",
-        "[Объединенный] Телеграм-каналы": "Telegram-каналы",
+        "[Объединенный] Телеграм-каналы": "Телеграм-каналы",
         "[Объединенный] Радио": "Радио",
     }
 
@@ -147,10 +147,13 @@ def run() -> None:
         # Plot bubbles
         # Size depends on percentage (scaled for visibility)
         # Reduced overall size for better fit
-        sizes = [(row.Percentage**1.8) * 1.9 for row in group_data.itertuples()]
+        sizes = [(row.Percentage**1.8) * 0.9 for row in group_data.itertuples()]
 
         # Determine colors for highlighting
-        # Highlight social media for 18-24 and TV for 45-54
+        # Green fill for specific combinations like in the photo:
+        # - Социальные сети: 45-54, 65+
+        # - Интернет-издания: 45-54, 65+
+        # - Телевидение: 65+
         face_colors = []
         edge_colors = []
         line_widths = []
@@ -167,8 +170,8 @@ def run() -> None:
                 edge_colors.append("#F0DC58")
                 line_widths.append(3)
             else:
-                face_colors.append(BACKGROUND_COLOR)
-                edge_colors.append(NEON_CYAN)
+                face_colors.append("#82C2AB")  # Green fill
+                edge_colors.append("#82C2AB")
                 line_widths.append(2)
 
         # Scatter plot for this group
@@ -190,9 +193,11 @@ def run() -> None:
             pct = row.Percentage
 
             # Show percentage for: 1) highlighted bubbles (yellow ones), 2) Total column
-            if (age_group == "18-24" and source == "Социальные сети") or (
-                age_group == "45-54" and source == "Телевидение"
-            ) or age_group == "Всего (18-65+)":
+            if (
+                (age_group == "18-24" and source == "Социальные сети")
+                or (age_group == "45-54" and source == "Телевидение")
+                or age_group == "Всего (18-65+)"
+            ):
                 ax.text(
                     x=i,
                     y=y_idx,
@@ -207,10 +212,10 @@ def run() -> None:
 
     # Set ticks and labels
     ax.set_xticks(range(len(x_order)))
-    ax.set_xticklabels(x_order, fontsize=12)
+    ax.set_xticklabels(x_order, fontsize=10)
 
     ax.set_yticks(range(len(y_order)))
-    ax.set_yticklabels(y_order, fontsize=12)
+    ax.set_yticklabels(y_order, fontsize=10)
 
     # Remove spines
     ax.spines["top"].set_visible(False)
@@ -223,11 +228,11 @@ def run() -> None:
 
     # Title
     # Calculate key insight: Which source is most popular overall?
-    title_text = "Самые востребованные источники информации по возрасту."
+    title_text = "Самые востребованные источники\n информации по возрасту."
 
     plt.title(
         title_text,
-        fontsize=16,
+        fontsize=24,
         pad=30,
         color=TEXT_COLOR,
         loc="center",
@@ -235,21 +240,21 @@ def run() -> None:
     )
 
     # Adjust layout with proper margins to prevent cutoff
-    plt.subplots_adjust(left=0.25, right=0.95, top=0.88, bottom=0.08)
+    plt.subplots_adjust(left=0.18, right=0.95, top=0.88, bottom=0.08)
 
     # Add footer
     plt.annotate(
-        "Источник: Опрос Мордовского государственного университет имени Н. П. Огарёва",
+        "Источник: Опрос Мордовского государственного университета имени Н. П. Огарёва",
         xy=(0, 0),
         xycoords="figure points",
-        fontsize=10,
+        fontsize=12,
         color="#494949",
-        xytext=(10, 3),
+        xytext=(150, 5),
     )
 
     # Save
     output_path = OUTPUT_DIR / "graph8.png"
-    plt.savefig(output_path, dpi=300, bbox_inches="tight")
+    plt.savefig(output_path, dpi=300)
     plt.close()
 
     logger.success(f"Graph 8 saved to: {output_path}")

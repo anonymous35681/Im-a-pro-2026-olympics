@@ -22,14 +22,14 @@ def run() -> None:
 
     # Columns mapping
     channels = [
-        ("[Объединенный] Телевидение", "ТВ"),
-        ("[Объединенный] Интернет-издания", "Интернет-СМИ"),
-        ("[Объединенный] Социальные сети", "Соцсети"),
-        ("[Объединенный] Друзья", "Друзья/Коллеги"),
+        ("[Объединенный] Телевидение", "Телевидение"),
+        ("[Объединенный] Интернет-издания", "Интернет-издания"),
+        ("[Объединенный] Социальные сети", "Социальные сети"),
+        ("[Объединенный] Друзья", "Друзья"),
         ("[Объединенный] Газеты", "Газеты"),
         ("[Объединенный] Радио", "Радио"),
-        ("[Объединенный] Журналы", "Журналы"),
-        ("[Объединенный] Телеграм-каналы", "Telegram"),
+        ("[Объединенный] Журналы", "Печатные журналы"),
+        ("[Объединенный] Телеграм-каналы", "Телеграм-каналы"),
     ]
 
     for col, label in channels:
@@ -82,14 +82,14 @@ def run() -> None:
 
     plt.title(
         "Доверие и недоверие к СМИ",
-        fontsize=16,
+        fontsize=24,
         pad=35,
         color="#494949",
         loc="center",
         fontweight="bold",
     )
 
-    plt.xlabel("Доля респондентов (%)", fontsize=12, labelpad=15)
+    plt.xlabel("Доля респондентов (%)", fontsize=14, labelpad=15)
     plt.xlim(
         0, max(res_df["trust"].max(), res_df["distrust"].max()) + 10
     )  # Add some padding
@@ -102,20 +102,76 @@ def run() -> None:
         facecolor="#FFFFFF",
         edgecolor="#494949",
     )
+
+    # Increase Y-axis tick labels size
+    plt.tick_params(axis="y", labelsize=12)
+
     plt.grid(axis="x", color="#CCCCCC", alpha=0.5, linestyle="--")
     plt.tight_layout()
 
     output_path = OUTPUT_DIR / "graph12.png"
     plt.savefig(output_path, dpi=300, bbox_inches="tight")
 
+    # Add percentage labels for Телевидение and Друзья  # noqa: RUF003
+    for _, row in res_df.iterrows():
+        if row["channel"] == "Телевидение":
+            y_pos = row["channel"]
+            # Телевидение - Distrust (green/cyan) # noqa: RUF003
+            plt.text(
+                row["distrust"] + 3.5,
+                y_pos,
+                f"{row['distrust']:.1f}%",
+                fontsize=11,
+                va="center",
+                ha="right",
+                color=DISTRUST_COLOR,
+                fontweight="bold",
+            )
+            # Телевидение - Trust (red) # noqa: RUF003
+            plt.text(
+                row["trust"] - 0.7,
+                y_pos,
+                f"{row['trust']:.1f}%",
+                fontsize=11,
+                va="center",
+                ha="right",
+                color=TRUST_COLOR,
+                fontweight="bold",
+            )
+        if row["channel"] == "Друзья":
+            y_pos = row["channel"]
+            # Друзья - Distrust (green/cyan)
+            plt.text(
+                row["distrust"] - 3.1,
+                y_pos,
+                f" {row['distrust']:.1f}%",
+                fontsize=11,
+                va="center",
+                ha="left",
+                color=DISTRUST_COLOR,
+                fontweight="bold",
+            )
+            # Друзья - Trust (red)
+            plt.text(
+                row["trust"] - 0.7,
+                y_pos,
+                f"{row['trust']:.1f}%",
+                fontsize=11,
+                va="center",
+                ha="right",
+                color=TRUST_COLOR,
+                fontweight="bold",
+            )
+
     # Add footer
     plt.annotate(
-        "Источники: Опрос Мордовского государственного университет имени Н. П. Огарёва",
-        xy=(0, 0),
-        xycoords="figure points",
-        fontsize=10,
+        "Источник: Опрос Мордовского государственного университета имени Н. П. Огарёва",
+        xy=(0.48, 0.0208),
+        xycoords="figure fraction",
+        fontsize=12,
         color="#494949",
-        xytext=(10, 3),
+        ha="center",
+        va="top",
     )
     plt.savefig(output_path, dpi=300, bbox_inches="tight")
     plt.close()

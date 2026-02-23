@@ -57,14 +57,14 @@ def run() -> None:
         "Затрудняюсь ответить",
     ]
 
-    # Colors (New color scheme)
+    # Colors (Red and Yellow highlighted, others muted/transparent)
     colors = {
-        "Ежедневно": "#E06561",  # Red
-        "По несколько раз в неделю": "#F0DC58",  # Yellow
-        "По несколько раз в месяц": "#77B96E",  # Green
-        "По несколько раз в год": "#82C2AB",  # Cyan
-        "Не сталкивался": "#81A6DF",  # Blue
-        "Затрудняюсь ответить": "#999999",  # Lighter gray
+        "Ежедневно": "#E06561",  # Red - bright
+        "По несколько раз в неделю": "#F0DC58",  # Yellow - bright
+        "По несколько раз в месяц": "#b7f2aa",  # Green
+        "По несколько раз в год": "#9edbdb",  # Cyan
+        "Не сталкивался": "#7d99b5",  # Blue
+        "Затрудняюсь ответить": "#9e9d9d",  # Gray
     }
 
     data_rows = []
@@ -137,6 +137,8 @@ def run() -> None:
     # Add traces in stack order
     for cat in stack_order:
         values = plot_df[cat]
+        opacity = 1.0 if cat in ["Ежедневно", "По несколько раз в неделю"] else 0.4
+
         fig.add_trace(
             go.Bar(
                 y=plot_df["Source"],
@@ -144,6 +146,7 @@ def run() -> None:
                 name=cat,
                 orientation="h",
                 marker_color=colors[cat],
+                marker_opacity=opacity,
                 text=values.apply(lambda x: f"{x:.0f}%" if x > 3 else ""),
                 textposition="auto",
                 hovertemplate=f"<b>{cat}</b><br>%{{y}}: %{{x:.1f}}%<extra></extra>",
@@ -155,12 +158,13 @@ def run() -> None:
 
     fig.update_layout(
         title={
-            "text": "Чистота взаимодействия с фейковыми новостями",
+            "text": "Частота взаимодействия с фейковыми новостями",
             "x": 0.5,
             "xanchor": "center",
-            "y": 0.98,
+            "y": 0.99,
             "yanchor": "top",
-            "font": {"size": 18, "color": "#494949"},
+            "font": {"size": 28, "color": "#494949", "weight": "bold"},
+            "pad": {"t": 5, "b": 10},
         },
         barmode="stack",  # Standard stacked bar
         xaxis={
@@ -169,7 +173,7 @@ def run() -> None:
             "ticktext": ["0%", "20%", "40%", "60%", "80%", "100%"],
             "gridcolor": "#CCCCCC",
             "zeroline": False,
-            "tickfont": {"size": 12, "color": "#494949"},
+            "tickfont": {"size": 18, "color": "#494949"},
             "range": [0, 100],  # Force 0-100 scale
         },
         yaxis={
@@ -179,31 +183,31 @@ def run() -> None:
         legend={
             "orientation": "h",
             "yanchor": "bottom",
-            "y": 1.05,
+            "y": 1.02,
             "xanchor": "center",
             "x": 0.5,
-            "font": {"color": "#494949", "size": 12},
+            "font": {"color": "#494949", "size": 18},
             "bgcolor": "rgba(255,255,255,0)",
             # Reverse legend order to match visual stacking (Left-to-Right)
             "traceorder": "normal",
         },
         paper_bgcolor="#FFFFFF",  # White background
         plot_bgcolor="#FFFFFF",
-        margin={"l": 120, "r": 50, "t": 120, "b": 80},
+        margin={"l": 120, "r": 50, "t": 180, "b": 80},
         height=900,
         width=1000,
     )
 
     # Add footer
     fig.add_annotation(
-        x=0.45,
+        x=0.5,
         y=-0.06,
         xref="paper",
         yref="paper",
-        text="Источник: Опрос Мордовского государственного университет имени Н. П. Огарёва",
+        text="Источник: Опрос Мордовского государственного университета имени Н. П. Огарёва",
         showarrow=False,
-        font={"size": 12, "color": "#494949"},
-        xanchor="right",
+        font={"size": 18, "color": "#494949"},
+        xanchor="center",
         yanchor="top",
     )
 

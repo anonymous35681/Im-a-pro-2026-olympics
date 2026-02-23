@@ -26,13 +26,7 @@
 
 <br>
 
-[![Четвёртый график](./output/graph10.png)](./src/graphs/graph10.py)
-
-***четвёртый график*** ([исходный код](./src/graphs/graph10.py))
-
-<br>
-
-[![Пятый график](./output/graph11.png)](./src/graphs/graph11.py)
+[![Четвёртый график](./output/graph11.png)](./src/graphs/graph11.py)
 
 ***пятый график*** ([исходный код](./src/graphs/graph11.py))
 

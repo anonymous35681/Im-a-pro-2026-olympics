@@ -194,7 +194,7 @@ def run() -> None:
             "xanchor": "center",
             "y": 0.98,
             "yanchor": "top",
-            "font": {"size": 18, "color": "#494949"},
+            "font": {"size": 24, "color": "#494949"},
         },
         font={"size": 14, "color": "#494949"},
         plot_bgcolor="#FFFFFF",
@@ -323,13 +323,13 @@ def run() -> None:
 
     # Add footer
     fig.add_annotation(
-        x=0.6,
+        x=0.85,
         y=-0.08,
         xref="paper",
         yref="paper",
-        text="Источники: Росстат, Опрос Мордовского государственного университет имени Н. П. Огарёва",
+        text="Источники: Росстат, Опрос Мордовского государственного университетa имени Н. П. Огарёва",
         showarrow=False,
-        font={"size": 12, "color": "#494949"},
+        font={"size": 13, "color": "#494949"},
         xanchor="right",
         yanchor="top",
     )
