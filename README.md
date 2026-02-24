@@ -60,3 +60,9 @@ just research             # Запуск исследования
 uv run src/graphs/graph<номер графика>.py
 uv run src/scripts/research.py
 ```
+
+### Источники датасетов
+
+1) Справочник за 2024 год. Мордовия. 
+Опрос. Вопрос про насчёт частоты просмотра телевидения. (259 стр). 
+2) https://ncsem.e-mordovia.ru/Documents/Publications/978-5-98344-815-5.pdf
